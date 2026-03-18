@@ -1,7 +1,18 @@
 import type { GameContext, GameResult, MicroGame } from '$lib/engine/types.js';
-
-const BUFFER_WIDTH = 200;
-const BUFFER_HEIGHT = 150;
+import {
+	BUFFER_WIDTH,
+	BUFFER_HEIGHT,
+	FONT,
+	px,
+	rect,
+	drawSprite,
+	drawPixelText,
+	pixelTextWidth,
+	drawJPText,
+	lerp,
+	createBufferSurface,
+	type BufferSurface
+} from '$lib/engine/draw.js';
 
 const FLOOR_Y = 118;
 const MAT_WIDTH = 32;
@@ -51,24 +62,6 @@ interface GameState {
 	resolvedResult: Exclude<GameResult, 'pending'> | null;
 	stars: Star[];
 }
-
-interface BufferSurface {
-	canvas: HTMLCanvasElement;
-	ctx: CanvasRenderingContext2D;
-}
-
-/* ── 3×5 pixel font ── */
-const FONT: Record<string, string[]> = {
-	H: ['1.1', '1.1', '111', '1.1', '1.1'],
-	A: ['.1.', '1.1', '111', '1.1', '1.1'],
-	P: ['11.', '1.1', '11.', '1..', '1..'],
-	Y: ['1.1', '1.1', '.1.', '.1.', '.1.'],
-	B: ['11.', '1.1', '11.', '1.1', '11.'],
-	I: ['111', '.1.', '.1.', '.1.', '111'],
-	R: ['11.', '1.1', '11.', '1.1', '1.1'],
-	T: ['111', '.1.', '.1.', '.1.', '.1.'],
-	D: ['11.', '1.1', '1.1', '1.1', '11.']
-};
 
 /* ── Mattress sprite ── */
 const mattSprite = [
@@ -253,20 +246,6 @@ export default function createBirthdayJump(): MicroGame {
 	};
 }
 
-function createBufferSurface(): BufferSurface {
-	const canvas = document.createElement('canvas');
-	canvas.width = BUFFER_WIDTH;
-	canvas.height = BUFFER_HEIGHT;
-
-	const ctx = canvas.getContext('2d');
-	if (!ctx) {
-		throw new Error('Could not create 2D context for birthday-jump');
-	}
-	ctx.imageSmoothingEnabled = false;
-
-	return { canvas, ctx };
-}
-
 function createInitialState(difficulty: 1 | 2 | 3): GameState {
 	const mattSpeed = difficulty === 1 ? 34 : difficulty === 2 ? 48 : 63;
 	const airSpeed = difficulty === 1 ? 43 : difficulty === 2 ? 57 : 71;
@@ -350,53 +329,6 @@ function updateStars(state: GameState, dt: number) {
 		star.life -= dt;
 		return star.life > 0;
 	});
-}
-
-/* ── Pixel font helpers ── */
-
-function drawPixelText(
-	ctx: CanvasRenderingContext2D,
-	text: string,
-	sx: number,
-	y: number,
-	col: string
-) {
-	let x = sx;
-	for (let i = 0; i < text.length; i++) {
-		const g = FONT[text[i]];
-		if (!g) {
-			x += 3;
-			continue;
-		}
-		for (let r = 0; r < g.length; r++)
-			for (let c = 0; c < g[r].length; c++) if (g[r][c] === '1') px(ctx, x + c, y + r, col);
-		x += g[0].length + 1;
-	}
-}
-
-function pixelTextWidth(text: string): number {
-	let w = 0;
-	for (const ch of text) {
-		const g = FONT[ch];
-		w += g ? g[0].length + 1 : 3;
-	}
-	return w > 0 ? w - 1 : 0;
-}
-
-/* ── Sprite helper ── */
-
-function drawSprite(
-	ctx: CanvasRenderingContext2D,
-	x: number,
-	y: number,
-	data: string[],
-	pal: Record<string, string>
-) {
-	for (let r = 0; r < data.length; r++)
-		for (let c = 0; c < data[r].length; c++) {
-			const ch = data[r][c];
-			if (ch !== '.' && pal[ch]) px(ctx, x + c, y + r, pal[ch]);
-		}
 }
 
 /* ── Scene rendering ── */
@@ -965,13 +897,13 @@ function drawOverlayText(ctx: CanvasRenderingContext2D, state: GameState) {
 	if (state.phase === 'ready') {
 		const visible = Math.floor(state.phaseTimeMs / 100) % 2 === 0;
 		if (visible) {
-			drawJPText(ctx, '頑張れ！', 55, 14, '#ffcc00');
+			drawJPText(ctx, '頑張れ！', BUFFER_WIDTH / 2, 55, 14, '#ffcc00');
 		}
 		return;
 	}
 
 	if (state.phase === 'launch') {
-		drawJPText(ctx, '頑張れ！', 55, 14, '#ffcc00');
+		drawJPText(ctx, '頑張れ！', BUFFER_WIDTH / 2, 55, 14, '#ffcc00');
 		return;
 	}
 
@@ -979,44 +911,9 @@ function drawOverlayText(ctx: CanvasRenderingContext2D, state: GameState) {
 
 	if (state.phase === 'resolve') {
 		if (state.landed) {
-			drawJPText(ctx, 'すごい！', 55, 14, '#ff5599');
+			drawJPText(ctx, 'すごい！', BUFFER_WIDTH / 2, 55, 14, '#ff5599');
 		} else {
-			drawJPText(ctx, 'ドンマイ！', 55, 14, '#6688cc');
+			drawJPText(ctx, 'ドンマイ！', BUFFER_WIDTH / 2, 55, 14, '#6688cc');
 		}
 	}
-}
-
-function drawJPText(
-	ctx: CanvasRenderingContext2D,
-	text: string,
-	y: number,
-	size: number,
-	color: string
-) {
-	ctx.fillStyle = color;
-	ctx.font = `bold ${size}px DotGothic16, monospace`;
-	ctx.textAlign = 'center';
-	ctx.fillText(text, BUFFER_WIDTH / 2, y);
-	ctx.textAlign = 'start';
-}
-
-function px(ctx: CanvasRenderingContext2D, x: number, y: number, color: string) {
-	ctx.fillStyle = color;
-	ctx.fillRect(Math.round(x), Math.round(y), 1, 1);
-}
-
-function rect(
-	ctx: CanvasRenderingContext2D,
-	x: number,
-	y: number,
-	width: number,
-	height: number,
-	color: string
-) {
-	ctx.fillStyle = color;
-	ctx.fillRect(Math.round(x), Math.round(y), Math.round(width), Math.round(height));
-}
-
-function lerp(start: number, end: number, t: number) {
-	return start + (end - start) * t;
 }
