@@ -113,6 +113,23 @@ export function createGameRunner(
 		}
 	}
 
+	function destroyRunner() {
+		if (destroyed) return;
+		destroyed = true;
+		if (rafId) {
+			cancelAnimationFrame(rafId);
+			rafId = 0;
+		}
+		if (resultTimeout) {
+			clearTimeout(resultTimeout);
+			resultTimeout = null;
+		}
+		document.removeEventListener('visibilitychange', onVisibilityChange);
+		input.destroy();
+		scaling.destroy();
+		game.destroy();
+	}
+
 	function loop(now: number) {
 		if (destroyed || paused) {
 			rafId = 0;
@@ -142,7 +159,7 @@ export function createGameRunner(
 		if (result !== 'pending') {
 			drawResultWash(result);
 			resultTimeout = setTimeout(() => {
-				game.destroy();
+				destroyRunner();
 				onComplete(result as 'win' | 'lose');
 			}, RESULT_DURATION);
 			rafId = 0;
@@ -161,21 +178,6 @@ export function createGameRunner(
 			rafId = requestAnimationFrame(loop);
 		},
 
-		destroy() {
-			if (destroyed) return;
-			destroyed = true;
-			if (rafId) {
-				cancelAnimationFrame(rafId);
-				rafId = 0;
-			}
-			if (resultTimeout) {
-				clearTimeout(resultTimeout);
-				resultTimeout = null;
-			}
-			document.removeEventListener('visibilitychange', onVisibilityChange);
-			input.destroy();
-			scaling.destroy();
-			game.destroy();
-		}
+		destroy: destroyRunner
 	};
 }
