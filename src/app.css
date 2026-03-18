@@ -31,4 +31,6 @@ canvas {
 	height: min(90vw, 90vh, 600px);
 	border-radius: 12px;
 	box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+	image-rendering: pixelated;
+	image-rendering: crisp-edges;
 }

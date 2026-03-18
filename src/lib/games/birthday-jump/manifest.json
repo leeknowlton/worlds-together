@@ -1,0 +1,15 @@
+{
+	"id": "birthday-jump",
+	"title": "Birthday Jump!",
+	"prompt": "Land on the mat!",
+	"date": "2026-03-19",
+	"occasion": "Birthday Party",
+	"description": "Leap off the sofa, hover over the living room, and drop onto the moving mattress before time runs out.",
+	"duration": 6.5,
+	"difficulty_scaling": {
+		"1": { "duration": 7 },
+		"2": { "duration": 6 },
+		"3": { "duration": 5 }
+	},
+	"tags": ["party", "timing", "living-room", "pixel-art"]
+}
