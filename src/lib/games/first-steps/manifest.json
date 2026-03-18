@@ -1,0 +1,16 @@
+{
+	"id": "first-steps",
+	"title": "First Steps!",
+	"prompt": "Walk!",
+	"date": "2025-01-15",
+	"occasion": "First Steps",
+	"description": "The day he finally let go of the table and took three wobbly steps across the living room.",
+	"duration": 5,
+	"difficulty_scaling": {
+		"1": { "duration": 6 },
+		"2": { "duration": 4 },
+		"3": { "duration": 2.5 }
+	},
+	"tags": ["motor", "first-year", "milestone"],
+	"preload": ["baby.png"]
+}
