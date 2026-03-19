@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { createGameRunner } from '$lib/engine/GameRunner.js';
-	import createBirthdayJump from '$lib/games/birthday-jump/game.js';
-	import manifest from '$lib/games/birthday-jump/manifest.json';
+	import createSwingRhythm from '$lib/games/swing-rhythm/game.js';
+	import manifest from '$lib/games/swing-rhythm/manifest.json';
 	import type { GameManifest } from '$lib/engine/types.js';
 	import { createTitleScene } from '$lib/title/TitleScene.js';
 
@@ -27,7 +27,7 @@
 			return;
 		}
 
-		const game = createBirthdayJump();
+		const game = createSwingRhythm();
 
 		runner = createGameRunner(canvasEl, {
 			game,
