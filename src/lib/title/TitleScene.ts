@@ -6,6 +6,7 @@ import {
 	createBufferSurface,
 	type BufferSurface
 } from '$lib/engine/draw.js';
+import { GAME_AREA_HEIGHT, METADATA_AREA_HEIGHT } from '$lib/utils/responsive.js';
 import titleImgUrl from '$lib/assets/title.png';
 
 const TITLE_COLOR = '#ffffff';
@@ -115,6 +116,34 @@ export function createTitleScene(canvas: HTMLCanvasElement, onStart: () => void)
 		ctx.textBaseline = 'alphabetic';
 	}
 
+	function drawTitleMetadata(screen: CanvasRenderingContext2D, canvasWidth: number) {
+		const y = GAME_AREA_HEIGHT;
+		const panelHeight = METADATA_AREA_HEIGHT;
+
+		screen.fillStyle = '#0e1017';
+		screen.fillRect(0, y, canvasWidth, panelHeight);
+
+		screen.fillStyle = '#2e3247';
+		screen.fillRect(0, y, canvasWidth, 1);
+
+		const paddingX = 16;
+
+		screen.font = 'bold 13px DotGothic16, monospace';
+		screen.fillStyle = '#8b8fa8';
+		screen.textAlign = 'left';
+		screen.textBaseline = 'top';
+		screen.fillText('Worlds Together', paddingX, y + 10);
+
+		screen.font = '11px DotGothic16, monospace';
+		screen.fillStyle = '#6e7290';
+		screen.textAlign = 'left';
+		screen.fillText('A collection of tiny games about tiny milestones.', paddingX, y + 32);
+		screen.fillText('Tap to start and relive the moments!', paddingX, y + 48);
+
+		screen.textAlign = 'start';
+		screen.textBaseline = 'alphabetic';
+	}
+
 	function blitToCanvas() {
 		if (!buffer) return;
 		const screen = canvas.getContext('2d');
@@ -124,11 +153,12 @@ export function createTitleScene(canvas: HTMLCanvasElement, onStart: () => void)
 		screen.fillStyle = '#151621';
 		screen.fillRect(0, 0, canvas.width, canvas.height);
 
-		const scale = Math.min(canvas.width / BUFFER_WIDTH, canvas.height / BUFFER_HEIGHT);
+		const gameAreaH = GAME_AREA_HEIGHT;
+		const scale = Math.min(canvas.width / BUFFER_WIDTH, gameAreaH / BUFFER_HEIGHT);
 		const drawWidth = BUFFER_WIDTH * scale;
 		const drawHeight = BUFFER_HEIGHT * scale;
 		const dx = (canvas.width - drawWidth) / 2;
-		const dy = (canvas.height - drawHeight) / 2;
+		const dy = (gameAreaH - drawHeight) / 2;
 
 		screen.fillStyle = '#090b11';
 		screen.fillRect(dx - 8, dy - 8, drawWidth + 16, drawHeight + 16);
@@ -138,6 +168,9 @@ export function createTitleScene(canvas: HTMLCanvasElement, onStart: () => void)
 
 		screen.imageSmoothingEnabled = false;
 		screen.drawImage(buffer.canvas, dx, dy, drawWidth, drawHeight);
+
+		drawTitleMetadata(screen, canvas.width);
+
 		screen.restore();
 	}
 
@@ -176,7 +209,7 @@ export function createTitleScene(canvas: HTMLCanvasElement, onStart: () => void)
 			const logicalW = canvas.getAttribute('width');
 			const logicalH = canvas.getAttribute('height');
 			canvas.width = logicalW ? parseInt(logicalW) : 400;
-			canvas.height = logicalH ? parseInt(logicalH) : 400;
+			canvas.height = logicalH ? parseInt(logicalH) : 480;
 			const screenCtx = canvas.getContext('2d');
 			if (screenCtx) screenCtx.setTransform(1, 0, 0, 1, 0, 0);
 

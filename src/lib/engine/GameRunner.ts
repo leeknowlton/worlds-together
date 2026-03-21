@@ -1,6 +1,7 @@
 import type { MicroGame, GameManifest, Difficulty, GameContext } from './types.js';
 import { createInputManager } from './InputManager.js';
-import { setupCanvas } from '$lib/utils/responsive.js';
+import { setupCanvas, GAME_AREA_HEIGHT } from '$lib/utils/responsive.js';
+import { drawMetadataPanel } from './MetadataPanel.js';
 
 const MAX_DT = 0.1;
 const TIMER_BAR_HEIGHT = 6;
@@ -18,7 +19,8 @@ export function createGameRunner(
 	const { game, manifest, difficulty, onComplete } = opts;
 	const scaling = setupCanvas(canvas);
 	const input = createInputManager(canvas);
-	const { ctx, width, height } = scaling;
+	const { ctx, width } = scaling;
+	const height = GAME_AREA_HEIGHT;
 
 	const totalTime = manifest.difficulty_scaling[difficulty]?.duration ?? manifest.duration;
 	let timeLeft = totalTime;
@@ -153,11 +155,27 @@ export function createGameRunner(
 			result = 'lose';
 		}
 
+		ctx.save();
+		ctx.beginPath();
+		ctx.rect(0, 0, width, height);
+		ctx.clip();
 		game.render(gameCtx);
 		drawTimerBar();
+		ctx.restore();
+
+		drawMetadataPanel(ctx, width, {
+			date: manifest.date,
+			occasion: manifest.occasion,
+			description: manifest.description
+		});
 
 		if (result !== 'pending') {
+			ctx.save();
+			ctx.beginPath();
+			ctx.rect(0, 0, width, height);
+			ctx.clip();
 			drawResultWash(result);
+			ctx.restore();
 			resultTimeout = setTimeout(() => {
 				destroyRunner();
 				onComplete(result as 'win' | 'lose');

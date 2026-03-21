@@ -71,7 +71,7 @@
 	<canvas
 		bind:this={canvasEl}
 		width="400"
-		height="400"
+		height="480"
 		class:interactive={appState === 'idle'}
 		aria-label="Worlds Together - Tap to start"
 		tabindex="0"
