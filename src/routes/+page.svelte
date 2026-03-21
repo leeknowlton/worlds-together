@@ -1,44 +1,78 @@
 <script lang="ts">
 	import { createGameRunner } from '$lib/engine/GameRunner.js';
-	import createSwingRhythm from '$lib/games/swing-rhythm/game.js';
-	import manifest from '$lib/games/swing-rhythm/manifest.json';
-	import type { GameManifest } from '$lib/engine/types.js';
+	import type { MicroGame, GameManifest } from '$lib/engine/types.js';
 	import { createTitleScene } from '$lib/title/TitleScene.js';
+	import { createSelectionScene } from '$lib/selection/SelectionScene.js';
 
-	type AppState = 'idle' | 'loading' | 'playing';
+	import createFirstSteps from '$lib/games/first-steps/game.js';
+	import firstStepsManifest from '$lib/games/first-steps/manifest.json';
+	import createBirthdayJump from '$lib/games/birthday-jump/game.js';
+	import birthdayJumpManifest from '$lib/games/birthday-jump/manifest.json';
+	import createSwingRhythm from '$lib/games/swing-rhythm/game.js';
+	import swingRhythmManifest from '$lib/games/swing-rhythm/manifest.json';
 
-	const gameManifest = manifest as GameManifest;
+	interface GameEntry {
+		create: () => MicroGame;
+		manifest: GameManifest;
+	}
+
+	const games: GameEntry[] = [
+		{ create: createFirstSteps, manifest: firstStepsManifest as GameManifest },
+		{ create: createBirthdayJump, manifest: birthdayJumpManifest as GameManifest },
+		{ create: createSwingRhythm, manifest: swingRhythmManifest as GameManifest }
+	];
+
+	type AppState = 'idle' | 'selecting' | 'loading' | 'playing';
 
 	let appState: AppState = $state('idle');
 	let canvasEl: HTMLCanvasElement | undefined = $state();
 	let titleScene: ReturnType<typeof createTitleScene> | null = null;
+	let selectionScene: ReturnType<typeof createSelectionScene> | null = null;
 	let runner: ReturnType<typeof createGameRunner> | null = null;
 
-	async function startGame() {
-		if (appState !== 'idle') return;
-		appState = 'loading';
+	function showSelection() {
+		if (!canvasEl) return;
 
 		titleScene?.stop();
 		titleScene?.destroy();
 		titleScene = null;
+
+		appState = 'selecting';
+
+		selectionScene = createSelectionScene(
+			canvasEl,
+			games.map((g) => ({ manifest: g.manifest })),
+			(index) => startGame(index)
+		);
+		selectionScene.start();
+	}
+
+	async function startGame(index: number) {
+		if (appState !== 'selecting') return;
+		appState = 'loading';
+
+		selectionScene?.stop();
+		selectionScene?.destroy();
+		selectionScene = null;
 
 		if (!canvasEl) {
 			appState = 'idle';
 			return;
 		}
 
-		const game = createSwingRhythm();
+		const entry = games[index];
+		const game = entry.create();
 
 		runner = createGameRunner(canvasEl, {
 			game,
-			manifest: gameManifest,
+			manifest: entry.manifest,
 			difficulty: 1,
 			onComplete() {
 				runner = null;
 				appState = 'idle';
 
 				if (canvasEl) {
-					titleScene = createTitleScene(canvasEl, startGame);
+					titleScene = createTitleScene(canvasEl, showSelection);
 					titleScene.start();
 				}
 			}
@@ -51,12 +85,14 @@
 	$effect(() => {
 		if (!canvasEl) return;
 
-		titleScene = createTitleScene(canvasEl, startGame);
+		titleScene = createTitleScene(canvasEl, showSelection);
 		titleScene.start();
 
 		return () => {
 			titleScene?.destroy();
 			titleScene = null;
+			selectionScene?.destroy();
+			selectionScene = null;
 			runner?.destroy();
 			runner = null;
 		};
@@ -72,7 +108,7 @@
 		bind:this={canvasEl}
 		width="400"
 		height="400"
-		class:interactive={appState === 'idle'}
+		class:interactive={appState === 'idle' || appState === 'selecting'}
 		aria-label="Worlds Together - Tap to start"
 		tabindex="0"
 	></canvas>
