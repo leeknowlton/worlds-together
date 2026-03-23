@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { createGameRunner } from '$lib/engine/GameRunner.js';
-	import createBirthdayJump from '$lib/games/birthday-jump/game.js';
-	import manifest from '$lib/games/birthday-jump/manifest.json';
+	import createSillyDance from '$lib/games/silly-dance/game.js';
+	import manifest from '$lib/games/silly-dance/manifest.json';
 	import type { GameManifest } from '$lib/engine/types.js';
 	import { createTitleScene } from '$lib/title/TitleScene.js';
 
@@ -27,7 +27,7 @@
 			return;
 		}
 
-		const game = createBirthdayJump();
+		const game = createSillyDance();
 
 		runner = createGameRunner(canvasEl, {
 			game,
