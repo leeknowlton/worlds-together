@@ -1,0 +1,15 @@
+{
+	"id": "airport-dash",
+	"title": "Airport Dash!",
+	"prompt": "Run!",
+	"date": "2026-03-23",
+	"occasion": "Airport Fun",
+	"description": "Running wild through Taipei airport on the way home from Brisbane and Auckland, dodging chairs and suitcases in a giant loop.",
+	"duration": 8,
+	"difficulty_scaling": {
+		"1": { "duration": 10 },
+		"2": { "duration": 8 },
+		"3": { "duration": 6 }
+	},
+	"tags": ["travel", "running", "airport", "taipei"]
+}

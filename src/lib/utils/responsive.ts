@@ -1,12 +1,20 @@
-const DEFAULT_LOGICAL_SIZE = 400;
+const DEFAULT_LOGICAL_WIDTH = 400;
+const DEFAULT_LOGICAL_HEIGHT = 480;
 
-export function setupCanvas(canvas: HTMLCanvasElement, logicalSize = DEFAULT_LOGICAL_SIZE) {
+export const METADATA_AREA_HEIGHT = 80;
+export const GAME_AREA_HEIGHT = DEFAULT_LOGICAL_HEIGHT - METADATA_AREA_HEIGHT;
+
+export function setupCanvas(
+	canvas: HTMLCanvasElement,
+	logicalWidth = DEFAULT_LOGICAL_WIDTH,
+	logicalHeight = DEFAULT_LOGICAL_HEIGHT
+) {
 	const ctx = canvas.getContext('2d')!;
 
 	function apply() {
 		const dpr = window.devicePixelRatio || 1;
-		canvas.width = logicalSize * dpr;
-		canvas.height = logicalSize * dpr;
+		canvas.width = logicalWidth * dpr;
+		canvas.height = logicalHeight * dpr;
 		ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 	}
 
@@ -22,8 +30,8 @@ export function setupCanvas(canvas: HTMLCanvasElement, logicalSize = DEFAULT_LOG
 
 	return {
 		ctx,
-		width: logicalSize,
-		height: logicalSize,
+		width: logicalWidth,
+		height: logicalHeight,
 		destroy() {
 			mql.removeEventListener('change', onDprChange);
 			window.removeEventListener('resize', apply);
