@@ -6,6 +6,8 @@
 	import microwaveManifest from '$lib/games/microwave-cook/manifest.json';
 	import createSwingRhythm from '$lib/games/swing-rhythm/game.js';
 	import swingRhythmManifest from '$lib/games/swing-rhythm/manifest.json';
+	import createSillyDance from '$lib/games/silly-dance/game.js';
+	import sillyDanceManifest from '$lib/games/silly-dance/manifest.json';
 	import type { GameManifest, MicroGame } from '$lib/engine/types.js';
 	import { createTitleScene } from '$lib/title/TitleScene.js';
 
@@ -14,7 +16,8 @@
 	const games: Array<{ create: () => MicroGame; manifest: GameManifest }> = [
 		{ create: createBirthdayJump, manifest: birthdayManifest as GameManifest },
 		{ create: createMicrowaveCook, manifest: microwaveManifest as GameManifest },
-		{ create: createSwingRhythm, manifest: swingRhythmManifest as GameManifest }
+		{ create: createSwingRhythm, manifest: swingRhythmManifest as GameManifest },
+		{ create: createSillyDance, manifest: sillyDanceManifest as GameManifest }
 	];
 
 	let appState: AppState = $state('idle');

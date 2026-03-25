@@ -2,6 +2,7 @@ import type { MicroGame, GameManifest, Difficulty, GameContext } from './types.j
 import { createInputManager } from './InputManager.js';
 import { setupCanvas, GAME_AREA_HEIGHT } from '$lib/utils/responsive.js';
 import { drawMetadataPanel } from './MetadataPanel.js';
+import { createSoundManager } from './SoundManager.js';
 
 const MAX_DT = 0.1;
 const TIMER_BAR_HEIGHT = 6;
@@ -19,6 +20,7 @@ export function createGameRunner(
 	const { game, manifest, difficulty, onComplete } = opts;
 	const scaling = setupCanvas(canvas);
 	const input = createInputManager(canvas);
+	const sound = createSoundManager();
 	const { ctx, width } = scaling;
 	const height = GAME_AREA_HEIGHT;
 
@@ -68,9 +70,8 @@ export function createGameRunner(
 		return img;
 	}
 
-	// eslint-disable-next-line @typescript-eslint/no-unused-vars
-	function playSound(_id: string) {
-		// no-op for MVP
+	function playSound(id: string) {
+		sound.play(id);
 	}
 
 	const gameCtx: GameContext = {
@@ -128,6 +129,7 @@ export function createGameRunner(
 		}
 		document.removeEventListener('visibilitychange', onVisibilityChange);
 		input.destroy();
+		sound.destroy();
 		scaling.destroy();
 		game.destroy();
 	}
