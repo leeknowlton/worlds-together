@@ -1,0 +1,15 @@
+{
+	"id": "silly-dance",
+	"title": "Silly Dance!",
+	"prompt": "Copy the moves!",
+	"date": "2026-03-23",
+	"occasion": "Dance Party",
+	"description": "Hit the arrows to the beat and make the kid bust silly dance moves across the living room floor.",
+	"duration": 10,
+	"difficulty_scaling": {
+		"1": { "duration": 12 },
+		"2": { "duration": 10 },
+		"3": { "duration": 8 }
+	},
+	"tags": ["rhythm", "dance", "music", "parappa"]
+}
