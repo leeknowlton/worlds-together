@@ -13,6 +13,18 @@ import {
 	createBufferSurface,
 	type BufferSurface
 } from '$lib/engine/draw.js';
+import {
+	CHILD_PAL,
+	drawChildHead,
+	drawChildEyes,
+	drawChildBrows,
+	drawChildMouth,
+	drawChildNeck,
+	drawChildTorso,
+	shouldBlink,
+	type EyeStyle,
+	type MouthStyle
+} from '$lib/sprites/child.js';
 
 const FLOOR_Y = 118;
 const MAT_WIDTH = 32;
@@ -615,97 +627,31 @@ function drawChild(ctx: CanvasRenderingContext2D, state: GameState, elapsedMs: n
 	const bodyY = Math.round(state.childY + bob + hover);
 	const cx = state.childX;
 
-	const skin = '#ffd8b0';
-	const skinSh = '#f0c090';
-	const hair = '#483020';
-	const hairHi = '#604838';
-	const eyeC = '#282020';
-	const shirt = '#c0e8b8';
-	const shirtLt = '#d8f0d0';
-	const shirtSh = '#98c890';
-	const shirtDk = '#80b878';
-	const pants = '#f0a8b8';
-	const pantsLt = '#f8c0d0';
-	const pantsSh = '#d890a0';
-	const foot = '#ffd8b0';
-	const blush = '#f0a0a0';
-	const mouth = '#d06060';
-
 	const hy = bodyY - 22;
-	/* Hair top */
-	rect(ctx, cx - 6, hy, 12, 2, hair);
-	rect(ctx, cx - 7, hy + 2, 14, 1, hair);
-	px(ctx, cx - 3, hy, hairHi);
-	px(ctx, cx - 2, hy, hairHi);
-	px(ctx, cx - 4, hy + 1, hairHi);
+	const fy = drawChildHead(ctx, cx, hy);
 
-	const fy = hy + 3;
-	/* Face */
-	rect(ctx, cx - 5, fy - 1, 10, 1, skin);
-	rect(ctx, cx - 6, fy, 12, 7, skin);
-	rect(ctx, cx - 5, fy + 7, 10, 1, skin);
-	rect(ctx, cx - 4, fy + 8, 8, 1, skin);
-
-	/* Face shadow at fy+5, fy+6 */
-	px(ctx, cx - 6, fy + 5, skinSh);
-	px(ctx, cx - 6, fy + 6, skinSh);
-	px(ctx, cx + 5, fy + 5, skinSh);
-	px(ctx, cx + 5, fy + 6, skinSh);
-	/* Face shadow at bottom corners fy+7 */
-	px(ctx, cx - 5, fy + 7, skinSh);
-	px(ctx, cx + 4, fy + 7, skinSh);
-
-	/* Hair fringe across face */
-	rect(ctx, cx - 6, fy - 1, 12, 1, hair);
-	/* Side hair strips */
-	rect(ctx, cx - 7, fy - 1, 1, 4, hair);
-	rect(ctx, cx + 6, fy - 1, 1, 4, hair);
-	/* Side bang pixels */
-	px(ctx, cx - 5, fy, hair);
-	px(ctx, cx + 4, fy, hair);
-
+	/* eyes */
 	const ey = fy + 3;
-	drawEyes(ctx, cx, ey, pose, eyeC, elapsedMs);
+	const eyeStyle: EyeStyle =
+		pose === 'land' ? 'happy' : pose === 'fail' ? 'cross' : shouldBlink(elapsedMs) ? 'blink' : 'open';
+	drawChildEyes(ctx, cx, ey, eyeStyle, pose === 'idle');
+	if (pose === 'idle') drawChildBrows(ctx, cx, ey);
 
-	/* Idle raised brows */
-	if (pose === 'idle') {
-		px(ctx, cx - 4, ey - 3, hair);
-		px(ctx, cx - 3, ey - 3, hair);
-		px(ctx, cx + 1, ey - 3, hair);
-		px(ctx, cx + 2, ey - 3, hair);
-	}
+	/* mouth */
+	const mouthStyle: MouthStyle =
+		pose === 'fail' ? 'wavy' : pose === 'jump' ? 'open' : pose === 'land' ? 'happy' : 'idle';
+	drawChildMouth(ctx, cx, fy + 6, mouthStyle);
 
-	/* Blush */
-	px(ctx, cx - 5, fy + 4, blush);
-	px(ctx, cx - 5, fy + 5, blush);
-	px(ctx, cx + 4, fy + 4, blush);
-	px(ctx, cx + 4, fy + 5, blush);
-	drawMouth(ctx, cx, fy + 6, pose, mouth);
+	drawChildNeck(ctx, cx, fy + 9);
 
-	/* Neck */
-	rect(ctx, cx - 1, fy + 9, 2, 1, skin);
-
-	/* Torso */
+	/* torso */
 	const by = fy + 10;
 	const bh = pose === 'land' || pose === 'fail' ? 5 : 6;
-	rect(ctx, cx - 5, by, 10, bh, shirt);
-	rect(ctx, cx - 5, by, 2, bh, shirtLt);
-	rect(ctx, cx - 1, by + 1, 2, bh - 1, shirtSh);
-	rect(ctx, cx - 5, by + bh - 1, 10, 1, shirtDk);
-	/* Shirt collar dark pixels */
-	px(ctx, cx - 2, by, shirtDk);
-	px(ctx, cx + 1, by, shirtDk);
-	/* Conditional shirt highlights */
-	if (bh > 4) {
-		px(ctx, cx - 3, by + 2, shirtLt);
-		px(ctx, cx + 2, by + 2, shirtLt);
-		px(ctx, cx - 1, by + 4, shirtLt);
-		px(ctx, cx + 3, by + 3, shirtLt);
-	}
+	drawChildTorso(ctx, cx, by, bh);
 
 	const ay = by + 1;
-	drawArms(ctx, cx, ay, pose, skin, elapsedMs);
-	drawLegs(ctx, cx, by + bh, pose, pants, pantsLt, pantsSh, foot);
+	drawArms(ctx, cx, ay, pose, CHILD_PAL.skin, elapsedMs);
+	drawLegs(ctx, cx, by + bh, pose, CHILD_PAL.pants, CHILD_PAL.pantsLt, CHILD_PAL.pantsSh, CHILD_PAL.foot);
 }
 
 function drawDropIndicator(ctx: CanvasRenderingContext2D, state: GameState) {
@@ -715,87 +661,6 @@ function drawDropIndicator(ctx: CanvasRenderingContext2D, state: GameState) {
 	px(ctx, x, y, '#ff8080');
 	px(ctx, x - 1, y, '#ff808080');
 	px(ctx, x + 1, y, '#ff808080');
-}
-
-function drawEyes(
-	ctx: CanvasRenderingContext2D,
-	x: number,
-	y: number,
-	pose: ChildPose,
-	color: string,
-	elapsedMs: number
-) {
-	if (pose === 'land') {
-		px(ctx, x - 4, y, color);
-		px(ctx, x - 3, y - 1, color);
-		px(ctx, x - 2, y, color);
-		px(ctx, x + 1, y, color);
-		px(ctx, x + 2, y - 1, color);
-		px(ctx, x + 3, y, color);
-		return;
-	}
-
-	if (pose === 'fail') {
-		drawCrossEye(ctx, x - 3, y, color);
-		drawCrossEye(ctx, x + 2, y, color);
-		return;
-	}
-
-	const blink = pose === 'idle' && Math.floor(elapsedMs / 2800) % 15 === 0;
-	if (blink) {
-		rect(ctx, x - 4, y, 3, 1, color);
-		rect(ctx, x + 1, y, 3, 1, color);
-		return;
-	}
-
-	/* Full eyes with highlights */
-	rect(ctx, x - 4, y - 1, 3, 3, color);
-	rect(ctx, x + 1, y - 1, 3, 3, color);
-	/* Top-center highlight */
-	px(ctx, x - 3, y - 1, '#ffffff');
-	px(ctx, x + 2, y - 1, '#ffffff');
-	/* Bottom highlight — idle only: bottom-left for left eye, bottom-right for right eye */
-	if (pose === 'idle') {
-		px(ctx, x - 4, y + 1, '#ffffff');
-		px(ctx, x + 3, y + 1, '#ffffff');
-	}
-}
-
-function drawCrossEye(ctx: CanvasRenderingContext2D, x: number, y: number, color: string) {
-	px(ctx, x - 1, y - 1, color);
-	px(ctx, x + 1, y - 1, color);
-	px(ctx, x, y, color);
-	px(ctx, x - 1, y + 1, color);
-	px(ctx, x + 1, y + 1, color);
-}
-
-function drawMouth(
-	ctx: CanvasRenderingContext2D,
-	x: number,
-	y: number,
-	pose: ChildPose,
-	color: string
-) {
-	if (pose === 'fail') {
-		px(ctx, x - 2, y + 1, color);
-		px(ctx, x - 1, y, color);
-		px(ctx, x, y + 1, color);
-		px(ctx, x + 1, y, color);
-		return;
-	}
-	if (pose === 'jump') {
-		rect(ctx, x - 1, y, 2, 2, color);
-		return;
-	}
-	if (pose === 'land') {
-		rect(ctx, x - 2, y, 4, 1, color);
-		px(ctx, x - 2, y + 1, color);
-		px(ctx, x + 1, y + 1, color);
-		return;
-	}
-	px(ctx, x - 1, y, color);
-	px(ctx, x, y, color);
-	px(ctx, x, y + 1, color);
 }
 
 function drawArms(

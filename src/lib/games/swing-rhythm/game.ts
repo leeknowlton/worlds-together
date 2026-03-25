@@ -8,6 +8,18 @@ import {
 	createBufferSurface,
 	type BufferSurface
 } from '$lib/engine/draw.js';
+import {
+	CHILD_PAL,
+	drawChildHead,
+	drawChildEyes,
+	drawChildBrows,
+	drawChildMouth,
+	drawChildNeck,
+	drawChildTorso,
+	shouldBlink,
+	type EyeStyle,
+	type MouthStyle
+} from '$lib/sprites/child.js';
 
 /* ── Layout constants ── */
 const PIVOT_X = 100;
@@ -406,162 +418,61 @@ function drawChild(
 	const cx = seatX;
 	const by = seatY - 1;
 
-	/* ── Same palette as birthday-jump child ── */
-	const skin = '#ffd8b0';
-	const skinSh = '#f0c090';
-	const hair = '#483020';
-	const hairHi = '#604838';
-	const eyeC = '#282020';
-	const shirt = '#c0e8b8';
-	const shirtLt = '#d8f0d0';
-	const shirtSh = '#98c890';
-	const shirtDk = '#80b878';
-	const pants = '#f0a8b8';
-	const pantsLt = '#f8c0d0';
-	const pantsSh = '#d890a0';
-	const foot = '#ffd8b0';
-	const blush = '#f0a0a0';
-	const mouth = '#d06060';
-
 	/* ── Legs (kick forward/back with swing) ── */
 	const legKick = Math.round(angle * 14);
 	const legOff = Math.round(legKick * 0.4);
 	/* left leg */
-	rect(ctx, cx - 4 + legOff, by, 3, 4, pants);
-	px(ctx, cx - 4 + legOff, by, pantsLt);
-	px(ctx, cx - 3 + legOff, by + 2, pantsSh);
-	rect(ctx, cx - 4 + legKick, by + 4, 3, 1, foot);
+	rect(ctx, cx - 4 + legOff, by, 3, 4, CHILD_PAL.pants);
+	px(ctx, cx - 4 + legOff, by, CHILD_PAL.pantsLt);
+	px(ctx, cx - 3 + legOff, by + 2, CHILD_PAL.pantsSh);
+	rect(ctx, cx - 4 + legKick, by + 4, 3, 1, CHILD_PAL.foot);
 	/* right leg */
-	rect(ctx, cx + 1 + legOff, by, 3, 4, pants);
-	px(ctx, cx + 1 + legOff, by, pantsLt);
-	px(ctx, cx + 2 + legOff, by + 2, pantsSh);
-	rect(ctx, cx + 1 + legKick, by + 4, 3, 1, foot);
+	rect(ctx, cx + 1 + legOff, by, 3, 4, CHILD_PAL.pants);
+	px(ctx, cx + 1 + legOff, by, CHILD_PAL.pantsLt);
+	px(ctx, cx + 2 + legOff, by + 2, CHILD_PAL.pantsSh);
+	rect(ctx, cx + 1 + legKick, by + 4, 3, 1, CHILD_PAL.foot);
 
-	/* ── Torso (matches birthday-jump idle body) ── */
+	/* ── Torso ── */
 	const bTop = by - 8;
-	rect(ctx, cx - 5, bTop, 10, 8, shirt);
-	rect(ctx, cx - 5, bTop, 2, 8, shirtLt);
-	rect(ctx, cx - 1, bTop + 1, 2, 7, shirtSh);
-	rect(ctx, cx - 5, bTop + 7, 10, 1, shirtDk);
-	/* collar dark pixels */
-	px(ctx, cx - 2, bTop, shirtDk);
-	px(ctx, cx + 1, bTop, shirtDk);
-	/* shirt highlights */
-	px(ctx, cx - 3, bTop + 2, shirtLt);
-	px(ctx, cx + 2, bTop + 2, shirtLt);
-	px(ctx, cx - 1, bTop + 4, shirtLt);
-	px(ctx, cx + 3, bTop + 3, shirtLt);
+	drawChildTorso(ctx, cx, bTop, 8);
 
 	/* ── Arms reaching up to chains ── */
 	const armY = bTop + 1;
 	/* left arm — reaches up-left to chain */
-	px(ctx, cx - 6, armY, skin);
-	px(ctx, cx - 6, armY - 1, skin);
-	px(ctx, cx - 5, armY - 2, skin);
-	px(ctx, cx - 5, armY - 3, skin);
+	px(ctx, cx - 6, armY, CHILD_PAL.skin);
+	px(ctx, cx - 6, armY - 1, CHILD_PAL.skin);
+	px(ctx, cx - 5, armY - 2, CHILD_PAL.skin);
+	px(ctx, cx - 5, armY - 3, CHILD_PAL.skin);
 	/* right arm — reaches up-right to chain */
-	px(ctx, cx + 5, armY, skin);
-	px(ctx, cx + 5, armY - 1, skin);
-	px(ctx, cx + 4, armY - 2, skin);
-	px(ctx, cx + 4, armY - 3, skin);
+	px(ctx, cx + 5, armY, CHILD_PAL.skin);
+	px(ctx, cx + 5, armY - 1, CHILD_PAL.skin);
+	px(ctx, cx + 4, armY - 2, CHILD_PAL.skin);
+	px(ctx, cx + 4, armY - 3, CHILD_PAL.skin);
 
 	/* ── Neck ── */
-	rect(ctx, cx - 1, bTop - 1, 2, 1, skin);
+	drawChildNeck(ctx, cx, bTop - 1);
 
-	/* ── Head (exact match to birthday-jump) ── */
+	/* ── Head ── */
 	const hy = bTop - 12;
+	const windOffset = Math.round(-angle * 10);
+	const fy = drawChildHead(ctx, cx, hy, windOffset);
 
-	/* hair top */
-	rect(ctx, cx - 6, hy, 12, 2, hair);
-	rect(ctx, cx - 7, hy + 2, 14, 1, hair);
-	px(ctx, cx - 3, hy, hairHi);
-	px(ctx, cx - 2, hy, hairHi);
-	px(ctx, cx - 4, hy + 1, hairHi);
-
-	/* face */
-	const fy = hy + 3;
-	rect(ctx, cx - 5, fy - 1, 10, 1, skin);
-	rect(ctx, cx - 6, fy, 12, 7, skin);
-	rect(ctx, cx - 5, fy + 7, 10, 1, skin);
-	rect(ctx, cx - 4, fy + 8, 8, 1, skin);
-
-	/* face shadow */
-	px(ctx, cx - 6, fy + 5, skinSh);
-	px(ctx, cx - 6, fy + 6, skinSh);
-	px(ctx, cx + 5, fy + 5, skinSh);
-	px(ctx, cx + 5, fy + 6, skinSh);
-	px(ctx, cx - 5, fy + 7, skinSh);
-	px(ctx, cx + 4, fy + 7, skinSh);
-
-	/* hair fringe across face */
-	rect(ctx, cx - 6, fy - 1, 12, 1, hair);
-	/* side hair strips */
-	rect(ctx, cx - 7, fy - 1, 1, 4, hair);
-	rect(ctx, cx + 6, fy - 1, 1, 4, hair);
-	/* side bang pixels */
-	px(ctx, cx - 5, fy, hair);
-	px(ctx, cx + 4, fy, hair);
-
-	/* wind-blown hair (flows opposite to swing direction) */
-	const flow = Math.round(-angle * 10);
-	rect(ctx, cx - 7 + flow, fy, 1, 5, hair);
-	rect(ctx, cx + 6 + flow, fy, 1, 5, hair);
-	px(ctx, cx - 8 + flow, fy + 2, hair);
-	px(ctx, cx + 7 + flow, fy + 2, hair);
-
-	/* ── Eyes (birthday-jump style) ── */
+	/* ── Eyes ── */
 	const ey = fy + 3;
 	const recentHit = s.lastHitTime > 0 && s.elapsed - s.lastHitTime < 0.3;
 	const elapsedMs = s.elapsed * 1000;
-	const blink = !recentHit && Math.floor(elapsedMs / 2800) % 15 === 0;
 
-	if (recentHit) {
-		/* happy squint (like birthday-jump "land" eyes) */
-		px(ctx, cx - 4, ey, eyeC);
-		px(ctx, cx - 3, ey - 1, eyeC);
-		px(ctx, cx - 2, ey, eyeC);
-		px(ctx, cx + 1, ey, eyeC);
-		px(ctx, cx + 2, ey - 1, eyeC);
-		px(ctx, cx + 3, ey, eyeC);
-	} else if (blink) {
-		rect(ctx, cx - 4, ey, 3, 1, eyeC);
-		rect(ctx, cx + 1, ey, 3, 1, eyeC);
-	} else {
-		/* full eyes with highlights */
-		rect(ctx, cx - 4, ey - 1, 3, 3, eyeC);
-		rect(ctx, cx + 1, ey - 1, 3, 3, eyeC);
-		px(ctx, cx - 3, ey - 1, '#ffffff');
-		px(ctx, cx + 2, ey - 1, '#ffffff');
-		px(ctx, cx - 4, ey + 1, '#ffffff');
-		px(ctx, cx + 3, ey + 1, '#ffffff');
-	}
+	const eyeStyle: EyeStyle = recentHit
+		? 'happy'
+		: shouldBlink(elapsedMs)
+			? 'blink'
+			: 'open';
+	drawChildEyes(ctx, cx, ey, eyeStyle, !recentHit);
+	if (!recentHit) drawChildBrows(ctx, cx, ey);
 
-	/* raised brows (idle style) */
-	if (!recentHit) {
-		px(ctx, cx - 4, ey - 3, hair);
-		px(ctx, cx - 3, ey - 3, hair);
-		px(ctx, cx + 1, ey - 3, hair);
-		px(ctx, cx + 2, ey - 3, hair);
-	}
-
-	/* blush (two pixels each side, like birthday-jump) */
-	px(ctx, cx - 5, fy + 4, blush);
-	px(ctx, cx - 5, fy + 5, blush);
-	px(ctx, cx + 4, fy + 4, blush);
-	px(ctx, cx + 4, fy + 5, blush);
-
-	/* mouth */
-	if (recentHit || s.swingAmp > 0.45) {
-		/* big open smile (like birthday-jump "land" mouth) */
-		rect(ctx, cx - 2, fy + 6, 4, 1, mouth);
-		px(ctx, cx - 2, fy + 7, mouth);
-		px(ctx, cx + 1, fy + 7, mouth);
-	} else {
-		/* small idle mouth (birthday-jump default) */
-		px(ctx, cx - 1, fy + 6, mouth);
-		px(ctx, cx, fy + 6, mouth);
-		px(ctx, cx, fy + 7, mouth);
-	}
+	/* ── Mouth ── */
+	const mouthStyle: MouthStyle = recentHit || s.swingAmp > 0.45 ? 'happy' : 'idle';
+	drawChildMouth(ctx, cx, fy + 6, mouthStyle);
 }
 
 /* ── HUD / indicators ── */
