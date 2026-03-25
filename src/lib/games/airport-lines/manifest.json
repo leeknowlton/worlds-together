@@ -1,0 +1,15 @@
+{
+	"id": "airport-lines",
+	"title": "Follow the Line!",
+	"prompt": "Stay on the line!",
+	"date": "2026-03-23",
+	"occasion": "Taipei Airport",
+	"description": "The airport floor has colored lines leading everywhere — yellow for taxis, purple for the metro, blue for buses, green for arrivals. Follow the right one!",
+	"duration": 7,
+	"difficulty_scaling": {
+		"1": { "duration": 8 },
+		"2": { "duration": 6.5 },
+		"3": { "duration": 5 }
+	},
+	"tags": ["airport", "taipei", "travel", "pixel-art"]
+}
