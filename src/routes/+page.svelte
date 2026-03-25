@@ -1,13 +1,21 @@
 <script lang="ts">
 	import { createGameRunner } from '$lib/engine/GameRunner.js';
-	import createAirportDash from '$lib/games/airport-dash/game.js';
-	import manifest from '$lib/games/airport-dash/manifest.json';
-	import type { GameManifest } from '$lib/engine/types.js';
+	import createBirthdayJump from '$lib/games/birthday-jump/game.js';
+	import birthdayManifest from '$lib/games/birthday-jump/manifest.json';
+	import createMicrowaveCook from '$lib/games/microwave-cook/game.js';
+	import microwaveManifest from '$lib/games/microwave-cook/manifest.json';
+	import createSwingRhythm from '$lib/games/swing-rhythm/game.js';
+	import swingRhythmManifest from '$lib/games/swing-rhythm/manifest.json';
+	import type { GameManifest, MicroGame } from '$lib/engine/types.js';
 	import { createTitleScene } from '$lib/title/TitleScene.js';
 
 	type AppState = 'idle' | 'loading' | 'playing';
 
-	const gameManifest = manifest as GameManifest;
+	const games: Array<{ create: () => MicroGame; manifest: GameManifest }> = [
+		{ create: createBirthdayJump, manifest: birthdayManifest as GameManifest },
+		{ create: createMicrowaveCook, manifest: microwaveManifest as GameManifest },
+		{ create: createSwingRhythm, manifest: swingRhythmManifest as GameManifest }
+	];
 
 	let appState: AppState = $state('idle');
 	let canvasEl: HTMLCanvasElement | undefined = $state();
@@ -27,11 +35,12 @@
 			return;
 		}
 
-		const game = createAirportDash();
+		const picked = games[Math.floor(Math.random() * games.length)];
+		const game = picked.create();
 
 		runner = createGameRunner(canvasEl, {
 			game,
-			manifest: gameManifest,
+			manifest: picked.manifest,
 			difficulty: 1,
 			onComplete() {
 				runner = null;
