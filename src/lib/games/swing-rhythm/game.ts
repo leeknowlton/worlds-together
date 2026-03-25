@@ -6,6 +6,7 @@ import {
 	rect,
 	lerp,
 	createBufferSurface,
+	blitBufferToScreen,
 	type BufferSurface
 } from '$lib/engine/draw.js';
 import {
@@ -117,7 +118,7 @@ export default function createSwingRhythm(): MicroGame {
 	let surface: BufferSurface | null = null;
 
 	return {
-		async init() {
+		async init(_ctx: GameContext) {
 			surface = createBufferSurface();
 			state = {
 				elapsed: 0,
@@ -228,26 +229,7 @@ export default function createSwingRhythm(): MicroGame {
 			drawHitCount(art, state);
 
 			/* Blit buffer → screen */
-			const screen = ctx.ctx;
-			screen.save();
-			screen.fillStyle = '#151621';
-			screen.fillRect(0, 0, ctx.width, ctx.height);
-
-			const scale = Math.min(ctx.width / BUFFER_WIDTH, ctx.height / BUFFER_HEIGHT);
-			const dw = BUFFER_WIDTH * scale;
-			const dh = BUFFER_HEIGHT * scale;
-			const dx = (ctx.width - dw) / 2;
-			const dy = (ctx.height - dh) / 2;
-
-			screen.fillStyle = '#090b11';
-			screen.fillRect(dx - 8, dy - 8, dw + 16, dh + 16);
-			screen.strokeStyle = '#2e3247';
-			screen.lineWidth = 4;
-			screen.strokeRect(dx - 8, dy - 8, dw + 16, dh + 16);
-
-			screen.imageSmoothingEnabled = false;
-			screen.drawImage(canvas, dx, dy, dw, dh);
-			screen.restore();
+			blitBufferToScreen(canvas, ctx.ctx, ctx.width, ctx.height);
 		},
 
 		destroy() {

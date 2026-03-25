@@ -139,3 +139,31 @@ export function drawJPText(
 export function lerp(start: number, end: number, t: number) {
 	return start + (end - start) * t;
 }
+
+export function blitBufferToScreen(
+	buffer: HTMLCanvasElement,
+	screen: CanvasRenderingContext2D,
+	screenWidth: number,
+	screenHeight: number,
+	bgColor: string = '#151621'
+): void {
+	screen.save();
+	screen.fillStyle = bgColor;
+	screen.fillRect(0, 0, screenWidth, screenHeight);
+
+	const scale = Math.min(screenWidth / buffer.width, screenHeight / buffer.height);
+	const dw = buffer.width * scale;
+	const dh = buffer.height * scale;
+	const dx = (screenWidth - dw) / 2;
+	const dy = (screenHeight - dh) / 2;
+
+	screen.fillStyle = '#090b11';
+	screen.fillRect(dx - 8, dy - 8, dw + 16, dh + 16);
+	screen.strokeStyle = '#2e3247';
+	screen.lineWidth = 4;
+	screen.strokeRect(dx - 8, dy - 8, dw + 16, dh + 16);
+
+	screen.imageSmoothingEnabled = false;
+	screen.drawImage(buffer, dx, dy, dw, dh);
+	screen.restore();
+}

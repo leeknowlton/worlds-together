@@ -10,6 +10,7 @@ import {
 	drawJPText,
 	lerp,
 	createBufferSurface,
+	blitBufferToScreen,
 	type BufferSurface
 } from '$lib/engine/draw.js';
 
@@ -285,26 +286,7 @@ export default function createMicrowaveCook(): MicroGame {
 			drawOverlay(art, state);
 
 			// Blit to screen
-			const screen = ctx.ctx;
-			screen.save();
-			screen.fillStyle = '#151621';
-			screen.fillRect(0, 0, ctx.width, ctx.height);
-
-			const scale = Math.min(ctx.width / BUFFER_WIDTH, ctx.height / BUFFER_HEIGHT);
-			const drawWidth = BUFFER_WIDTH * scale;
-			const drawHeight = BUFFER_HEIGHT * scale;
-			const dx = (ctx.width - drawWidth) / 2;
-			const dy = (ctx.height - drawHeight) / 2;
-
-			screen.fillStyle = '#090b11';
-			screen.fillRect(dx - 8, dy - 8, drawWidth + 16, drawHeight + 16);
-			screen.strokeStyle = '#2e3247';
-			screen.lineWidth = 4;
-			screen.strokeRect(dx - 8, dy - 8, drawWidth + 16, drawHeight + 16);
-
-			screen.imageSmoothingEnabled = false;
-			screen.drawImage(canvas, dx, dy, drawWidth, drawHeight);
-			screen.restore();
+			blitBufferToScreen(canvas, ctx.ctx, ctx.width, ctx.height);
 		},
 
 		destroy() {

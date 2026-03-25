@@ -7,6 +7,7 @@ import {
 	BUFFER_WIDTH,
 	BUFFER_HEIGHT,
 	createBufferSurface,
+	blitBufferToScreen,
 	type BufferSurface
 } from '$lib/engine/draw.js';
 import {
@@ -740,29 +741,11 @@ export default function createSillyDance(): MicroGame {
 			}
 
 			// ── Blit buffer → screen ──
-			const screen = ctx.ctx;
-			screen.save();
-			screen.fillStyle = '#1a1a2e';
-			screen.fillRect(0, 0, ctx.width, ctx.height);
-
-			const scale = Math.min(ctx.width / W, ctx.height / H);
-			const dw = W * scale;
-			const dh = H * scale;
-			const dx = (ctx.width - dw) / 2;
-			const dy = (ctx.height - dh) / 2;
-
-			screen.fillStyle = '#090b11';
-			screen.fillRect(dx - 8, dy - 8, dw + 16, dh + 16);
-			screen.strokeStyle = '#2e3247';
-			screen.lineWidth = 4;
-			screen.strokeRect(dx - 8, dy - 8, dw + 16, dh + 16);
-
-			screen.imageSmoothingEnabled = false;
-			screen.drawImage(surface.canvas, dx, dy, dw, dh);
-			screen.restore();
+			blitBufferToScreen(surface.canvas, ctx.ctx, ctx.width, ctx.height, '#1a1a2e');
 		},
 
 		destroy() {
+			s = null!;
 			surface = null;
 		}
 	};

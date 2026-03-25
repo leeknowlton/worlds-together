@@ -5,6 +5,7 @@ import {
 	px,
 	rect,
 	createBufferSurface,
+	blitBufferToScreen,
 	type BufferSurface
 } from '$lib/engine/draw.js';
 import { CHILD_PAL } from '$lib/sprites/child.js';
@@ -143,10 +144,10 @@ export default function createAirportLines(): MicroGame {
 
 			/* Handle input — move child left/right */
 			const moveSpeed = 60;
-			if (ctx.input.keys.left || (ctx.input.pointer.down && ctx.input.pointer.x < ctx.width * 0.4)) {
+			if (ctx.input.keys.left || (ctx.input.pointer.down && ctx.input.pointer.x < 0.4)) {
 				s.childX -= moveSpeed * dt;
 			}
-			if (ctx.input.keys.right || (ctx.input.pointer.down && ctx.input.pointer.x > ctx.width * 0.6)) {
+			if (ctx.input.keys.right || (ctx.input.pointer.down && ctx.input.pointer.x > 0.6)) {
 				s.childX += moveSpeed * dt;
 			}
 
@@ -194,26 +195,7 @@ export default function createAirportLines(): MicroGame {
 			drawArrows(art, s);
 
 			/* Blit to screen */
-			const screen = ctx.ctx;
-			screen.save();
-			screen.fillStyle = '#1a1a2e';
-			screen.fillRect(0, 0, ctx.width, ctx.height);
-
-			const scale = Math.min(ctx.width / BUFFER_WIDTH, ctx.height / BUFFER_HEIGHT);
-			const dw = BUFFER_WIDTH * scale;
-			const dh = BUFFER_HEIGHT * scale;
-			const dx = (ctx.width - dw) / 2;
-			const dy = (ctx.height - dh) / 2;
-
-			screen.fillStyle = '#090b11';
-			screen.fillRect(dx - 8, dy - 8, dw + 16, dh + 16);
-			screen.strokeStyle = '#2e3247';
-			screen.lineWidth = 4;
-			screen.strokeRect(dx - 8, dy - 8, dw + 16, dh + 16);
-
-			screen.imageSmoothingEnabled = false;
-			screen.drawImage(canvas, dx, dy, dw, dh);
-			screen.restore();
+			blitBufferToScreen(canvas, ctx.ctx, ctx.width, ctx.height, '#1a1a2e');
 		},
 
 		destroy() {

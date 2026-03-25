@@ -4,6 +4,7 @@ import {
 	px,
 	drawJPText,
 	createBufferSurface,
+	blitBufferToScreen,
 	type BufferSurface
 } from '$lib/engine/draw.js';
 import {
@@ -127,26 +128,7 @@ export function createTitleScene(canvas: HTMLCanvasElement, onStart: () => void)
 		const screen = canvas.getContext('2d');
 		if (!screen) return;
 
-		screen.save();
-		screen.fillStyle = '#151621';
-		screen.fillRect(0, 0, LOGICAL_W, LOGICAL_H);
-
-		const scale = Math.min(LOGICAL_W / BUFFER_WIDTH, LOGICAL_H / BUFFER_HEIGHT);
-		const drawWidth = BUFFER_WIDTH * scale;
-		const drawHeight = BUFFER_HEIGHT * scale;
-		const dx = (LOGICAL_W - drawWidth) / 2;
-		const dy = (LOGICAL_H - drawHeight) / 2;
-
-		screen.fillStyle = '#090b11';
-		screen.fillRect(dx - 8, dy - 8, drawWidth + 16, drawHeight + 16);
-		screen.strokeStyle = '#2e3247';
-		screen.lineWidth = 4;
-		screen.strokeRect(dx - 8, dy - 8, drawWidth + 16, drawHeight + 16);
-
-		screen.imageSmoothingEnabled = false;
-		screen.drawImage(buffer.canvas, dx, dy, drawWidth, drawHeight);
-
-		screen.restore();
+		blitBufferToScreen(buffer.canvas, screen, LOGICAL_W, LOGICAL_H);
 	}
 
 	function loop(now: number) {
