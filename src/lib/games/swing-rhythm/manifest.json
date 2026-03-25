@@ -1,0 +1,15 @@
+{
+	"id": "swing-rhythm",
+	"title": "Swing Swing Swing!",
+	"prompt": "Tap to the rhythm!",
+	"date": "2026-03-19",
+	"occasion": "Playground Fun",
+	"description": "Swing swing swing! Tap in time with the beat to push the swing higher and higher into the sky.",
+	"duration": 15,
+	"difficulty_scaling": {
+		"1": { "duration": 16 },
+		"2": { "duration": 15 },
+		"3": { "duration": 14 }
+	},
+	"tags": ["rhythm", "playground", "swing", "pixel-art"]
+}

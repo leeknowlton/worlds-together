@@ -4,6 +4,8 @@
 	import birthdayManifest from '$lib/games/birthday-jump/manifest.json';
 	import createMicrowaveCook from '$lib/games/microwave-cook/game.js';
 	import microwaveManifest from '$lib/games/microwave-cook/manifest.json';
+	import createSwingRhythm from '$lib/games/swing-rhythm/game.js';
+	import swingRhythmManifest from '$lib/games/swing-rhythm/manifest.json';
 	import createSillyDance from '$lib/games/silly-dance/game.js';
 	import sillyDanceManifest from '$lib/games/silly-dance/manifest.json';
 	import type { GameManifest, MicroGame } from '$lib/engine/types.js';
@@ -14,6 +16,7 @@
 	const games: Array<{ create: () => MicroGame; manifest: GameManifest }> = [
 		{ create: createBirthdayJump, manifest: birthdayManifest as GameManifest },
 		{ create: createMicrowaveCook, manifest: microwaveManifest as GameManifest },
+		{ create: createSwingRhythm, manifest: swingRhythmManifest as GameManifest },
 		{ create: createSillyDance, manifest: sillyDanceManifest as GameManifest }
 	];
 
@@ -80,7 +83,7 @@
 	<canvas
 		bind:this={canvasEl}
 		width="400"
-		height="400"
+		height="480"
 		class:interactive={appState === 'idle'}
 		aria-label="Worlds Together - Tap to start"
 		tabindex="0"

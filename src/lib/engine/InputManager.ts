@@ -1,4 +1,5 @@
 import type { InputState } from './types.js';
+import { GAME_AREA_HEIGHT } from '$lib/utils/responsive.js';
 
 function createEmptyState(): InputState {
 	return {
@@ -32,7 +33,11 @@ export function createInputManager(canvas: HTMLCanvasElement) {
 	function normalizePointer(e: PointerEvent) {
 		const rect = canvas.getBoundingClientRect();
 		state.pointer.x = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-		state.pointer.y = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height));
+		// Normalize y relative to the game area, not the full canvas (which includes metadata)
+		const canvasLogicalH = parseInt(canvas.getAttribute('height') || '480');
+		const gameAreaFraction = GAME_AREA_HEIGHT / canvasLogicalH;
+		const rawY = (e.clientY - rect.top) / rect.height;
+		state.pointer.y = Math.max(0, Math.min(1, rawY / gameAreaFraction));
 	}
 
 	function onPointerDown(e: PointerEvent) {
