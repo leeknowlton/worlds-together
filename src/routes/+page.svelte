@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { createGameRunner } from '$lib/engine/GameRunner.js';
-	import createSwingRhythm from '$lib/games/swing-rhythm/game.js';
-	import manifest from '$lib/games/swing-rhythm/manifest.json';
+	import createAirportDash from '$lib/games/airport-dash/game.js';
+	import manifest from '$lib/games/airport-dash/manifest.json';
 	import type { GameManifest } from '$lib/engine/types.js';
 	import { createTitleScene } from '$lib/title/TitleScene.js';
 
@@ -27,7 +27,7 @@
 			return;
 		}
 
-		const game = createSwingRhythm();
+		const game = createAirportDash();
 
 		runner = createGameRunner(canvasEl, {
 			game,
