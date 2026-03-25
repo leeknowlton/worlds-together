@@ -4,8 +4,6 @@
 	import { createTitleScene } from '$lib/title/TitleScene.js';
 	import { createSelectionScene } from '$lib/selection/SelectionScene.js';
 
-	import createFirstSteps from '$lib/games/first-steps/game.js';
-	import firstStepsManifest from '$lib/games/first-steps/manifest.json';
 	import createBirthdayJump from '$lib/games/birthday-jump/game.js';
 	import birthdayJumpManifest from '$lib/games/birthday-jump/manifest.json';
 	import createSwingRhythm from '$lib/games/swing-rhythm/game.js';
@@ -14,6 +12,10 @@
 	import microwaveManifest from '$lib/games/microwave-cook/manifest.json';
 	import createSillyDance from '$lib/games/silly-dance/game.js';
 	import sillyDanceManifest from '$lib/games/silly-dance/manifest.json';
+	import createAirportDash from '$lib/games/airport-dash/game.js';
+	import airportDashManifest from '$lib/games/airport-dash/manifest.json';
+	import createAirportLines from '$lib/games/airport-lines/game.js';
+	import airportLinesManifest from '$lib/games/airport-lines/manifest.json';
 
 	interface GameEntry {
 		create: () => MicroGame;
@@ -21,11 +23,12 @@
 	}
 
 	const games: GameEntry[] = [
-		{ create: createFirstSteps, manifest: firstStepsManifest as GameManifest },
 		{ create: createBirthdayJump, manifest: birthdayJumpManifest as GameManifest },
 		{ create: createSwingRhythm, manifest: swingRhythmManifest as GameManifest },
 		{ create: createMicrowaveCook, manifest: microwaveManifest as GameManifest },
-		{ create: createSillyDance, manifest: sillyDanceManifest as GameManifest }
+		{ create: createSillyDance, manifest: sillyDanceManifest as GameManifest },
+		{ create: createAirportDash, manifest: airportDashManifest as GameManifest },
+		{ create: createAirportLines, manifest: airportLinesManifest as GameManifest }
 	];
 
 	type AppState = 'idle' | 'selecting' | 'loading' | 'playing';
@@ -47,7 +50,7 @@
 
 		selectionScene = createSelectionScene(
 			canvasEl,
-			games.map((g) => ({ manifest: g.manifest })),
+			games.map((g) => ({ manifest: g.manifest, create: g.create })),
 			(index) => startGame(index)
 		);
 		selectionScene.start();

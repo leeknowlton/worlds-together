@@ -7,6 +7,7 @@ import {
 	createBufferSurface,
 	type BufferSurface
 } from '$lib/engine/draw.js';
+import { CHILD_PAL } from '$lib/sprites/child.js';
 
 /* ── Line destinations & colors ── */
 interface LineConfig {
@@ -303,37 +304,31 @@ function drawChild(ctx: CanvasRenderingContext2D, s: GameState, row: number) {
 	/* Shadow */
 	rect(ctx, cx - 3, cy + 1, 6, 2, '#00000030');
 
-	/* Body — tiny top-down figure */
-	const skin = '#ffd8b0';
-	const hair = '#483020';
-	const shirt = '#c0e8b8';
-	const pants = '#f0a8b8';
-
 	/* walking bob */
 	const bob = Math.floor(s.elapsed * 6) % 2;
 
 	/* feet */
-	px(ctx, cx - 2, cy + bob, pants);
-	px(ctx, cx + 1, cy + (1 - bob), pants);
+	px(ctx, cx - 2, cy + bob, CHILD_PAL.pants);
+	px(ctx, cx + 1, cy + (1 - bob), CHILD_PAL.pants);
 
 	/* body */
-	rect(ctx, cx - 2, cy - 3, 4, 3, shirt);
-	px(ctx, cx - 1, cy - 3, '#d8f0d0');
-	px(ctx, cx, cy - 3, '#98c890');
+	rect(ctx, cx - 2, cy - 3, 4, 3, CHILD_PAL.shirt);
+	px(ctx, cx - 1, cy - 3, CHILD_PAL.shirtLt);
+	px(ctx, cx, cy - 3, CHILD_PAL.shirtSh);
 
 	/* arms */
-	px(ctx, cx - 3, cy - 2 + bob, skin);
-	px(ctx, cx + 2, cy - 2 + (1 - bob), skin);
+	px(ctx, cx - 3, cy - 2 + bob, CHILD_PAL.skin);
+	px(ctx, cx + 2, cy - 2 + (1 - bob), CHILD_PAL.skin);
 
 	/* head */
-	rect(ctx, cx - 2, cy - 6, 4, 3, skin);
-	rect(ctx, cx - 2, cy - 7, 4, 1, hair);
-	px(ctx, cx - 2, cy - 6, hair);
-	px(ctx, cx + 1, cy - 6, hair);
+	rect(ctx, cx - 2, cy - 6, 4, 3, CHILD_PAL.skin);
+	rect(ctx, cx - 2, cy - 7, 4, 1, CHILD_PAL.hair);
+	px(ctx, cx - 2, cy - 6, CHILD_PAL.hair);
+	px(ctx, cx + 1, cy - 6, CHILD_PAL.hair);
 
 	/* eyes */
-	px(ctx, cx - 1, cy - 5, '#282020');
-	px(ctx, cx, cy - 5, '#282020');
+	px(ctx, cx - 1, cy - 5, CHILD_PAL.eye);
+	px(ctx, cx, cy - 5, CHILD_PAL.eye);
 }
 
 function drawPromptBanner(ctx: CanvasRenderingContext2D, s: GameState) {

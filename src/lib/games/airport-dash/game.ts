@@ -1,5 +1,16 @@
 import type { MicroGame, GameContext, GameResult } from '$lib/engine/types.js';
-import { drawJPText } from '$lib/engine/draw.js';
+import { px, rect, drawJPText } from '$lib/engine/draw.js';
+import {
+	CHILD_PAL,
+	drawChildHead,
+	drawChildEyes,
+	drawChildMouth,
+	drawChildNeck,
+	drawChildTorso,
+	shouldBlink,
+	type EyeStyle,
+	type MouthStyle
+} from '$lib/sprites/child.js';
 
 interface Obstacle {
 	angle: number;
@@ -26,6 +37,90 @@ interface GameState {
 }
 
 const TWO_PI = Math.PI * 2;
+
+function drawRunner(
+	c: CanvasRenderingContext2D,
+	rx: number, ry: number,
+	s: GameState, w: number
+) {
+	const scale = Math.max(1.5, Math.round(w / 160));
+
+	c.save();
+	c.translate(Math.round(rx), Math.round(ry));
+	c.scale(scale, scale);
+
+	// Sprite is ~14px wide and ~25px tall at 1x; center it
+	const cx = 0;
+	const baseY = 3; // shift so sprite center aligns with position
+	const hy = baseY - 22;
+	const fy = drawChildHead(c, cx, hy);
+
+	const ey = fy + 3;
+	const elapsedMs = s.frameTimer * 1000 + s.runFrame * 120;
+	const eyeStyle: EyeStyle = s.isJumping ? 'open' : shouldBlink(elapsedMs) ? 'blink' : 'happy';
+	drawChildEyes(c, cx, ey, eyeStyle);
+
+	const mouthStyle: MouthStyle = s.isJumping ? 'open' : 'happy';
+	drawChildMouth(c, cx, fy + 6, mouthStyle);
+
+	drawChildNeck(c, cx, fy + 9);
+
+	const by = fy + 10;
+	drawChildTorso(c, cx, by, 6);
+
+	// Running arms — alternate with frame
+	const armY = by + 1;
+	const skin = CHILD_PAL.skin;
+	if (s.runFrame % 2 === 0) {
+		// Left arm forward, right arm back
+		px(c, cx - 6, armY - 1, skin); px(c, cx - 7, armY - 2, skin);
+		px(c, cx + 5, armY + 1, skin); px(c, cx + 5, armY + 2, skin);
+	} else {
+		// Right arm forward, left arm back
+		px(c, cx - 6, armY + 1, skin); px(c, cx - 6, armY + 2, skin);
+		px(c, cx + 5, armY - 1, skin); px(c, cx + 6, armY - 2, skin);
+	}
+
+	// Running legs — alternate with frame
+	const legY = by + 6;
+	const { pants, pantsLt, foot } = CHILD_PAL;
+	if (s.isJumping) {
+		// Tucked legs
+		rect(c, cx - 4, legY, 3, 4, pants);
+		rect(c, cx + 1, legY, 3, 4, pants);
+		px(c, cx - 4, legY, pantsLt); px(c, cx + 1, legY, pantsLt);
+		rect(c, cx - 4, legY + 4, 3, 1, foot);
+		rect(c, cx + 1, legY + 4, 3, 1, foot);
+	} else if (s.runFrame % 2 === 0) {
+		// Left leg forward, right leg back
+		rect(c, cx - 4, legY, 3, 4, pants); px(c, cx - 4, legY, pantsLt);
+		rect(c, cx - 4, legY + 4, 3, 1, foot);
+		rect(c, cx + 1, legY + 1, 3, 3, pants); px(c, cx + 1, legY + 1, pantsLt);
+		rect(c, cx + 1, legY + 4, 3, 1, foot);
+	} else {
+		// Right leg forward, left leg back
+		rect(c, cx - 3, legY + 1, 3, 3, pants); px(c, cx - 3, legY + 1, pantsLt);
+		rect(c, cx - 3, legY + 4, 3, 1, foot);
+		rect(c, cx + 1, legY, 3, 4, pants); px(c, cx + 1, legY, pantsLt);
+		rect(c, cx + 1, legY + 4, 3, 1, foot);
+	}
+
+	c.restore();
+
+	// Motion lines when jumping (drawn at full scale)
+	if (s.isJumping) {
+		c.strokeStyle = 'rgba(0,0,0,0.2)';
+		c.lineWidth = 1.5;
+		for (let i = 0; i < 3; i++) {
+			const lx = rx - 12 + i * 5;
+			const ly = ry + 8 + i * 3;
+			c.beginPath();
+			c.moveTo(lx, ly);
+			c.lineTo(lx - 6, ly + 3);
+			c.stroke();
+		}
+	}
+}
 
 export default function createAirportDash(): MicroGame {
 	let state: GameState | null = null;
@@ -229,25 +324,8 @@ export default function createAirportDash(): MicroGame {
 
 			const jumpOffset = s.isJumping ? -14 : 0;
 
-			// Runner emoji (running boy)
-			c.font = `${w * 0.09}px serif`;
-			c.textAlign = 'center';
-			c.textBaseline = 'middle';
-			c.fillText('\u{1F3C3}', rx, ry + jumpOffset);
-
-			// Running motion lines when jumping
-			if (s.isJumping) {
-				c.strokeStyle = 'rgba(0,0,0,0.2)';
-				c.lineWidth = 1.5;
-				for (let i = 0; i < 3; i++) {
-					const lx = rx - 12 + i * 5;
-					const ly = ry + jumpOffset + 8 + i * 3;
-					c.beginPath();
-					c.moveTo(lx, ly);
-					c.lineTo(lx - 6, ly + 3);
-					c.stroke();
-				}
-			}
+			// Runner — shared child sprite, scaled up to match game canvas
+			drawRunner(c, rx, ry + jumpOffset, s, w);
 
 			// Hit counter (hearts remaining)
 			const heartsLeft = s.maxHits - s.hitCount;

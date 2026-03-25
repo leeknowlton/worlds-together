@@ -1,5 +1,25 @@
 import type { GameContext, GameResult, MicroGame } from '$lib/engine/types.js';
-import { rect, drawSprite, lerp, BUFFER_WIDTH, BUFFER_HEIGHT } from '$lib/engine/draw.js';
+import {
+	px,
+	rect,
+	drawSprite,
+	lerp,
+	BUFFER_WIDTH,
+	BUFFER_HEIGHT,
+	createBufferSurface,
+	type BufferSurface
+} from '$lib/engine/draw.js';
+import {
+	CHILD_PAL,
+	drawChildHead,
+	drawChildEyes,
+	drawChildMouth,
+	drawChildNeck,
+	drawChildTorso,
+	shouldBlink,
+	type EyeStyle,
+	type MouthStyle
+} from '$lib/sprites/child.js';
 
 /* ── constants ── */
 const W = BUFFER_WIDTH; // 200
@@ -68,6 +88,13 @@ interface GameState {
 	particles: Particle[];
 	danceFloorHue: number;
 	lastBeatBass: boolean;
+	/* Movement */
+	kidX: number;
+	kidTargetX: number;
+	kidJumpY: number;
+	kidJumpVel: number;
+	spinPhase: number;
+	squatAmount: number;
 }
 
 /* ── Pixel-art arrow sprites (12×12) ── */
@@ -152,6 +179,7 @@ const FLOOR_COLORS = ['#e91e63', '#9c27b0', '#3f51b5', '#00bcd4', '#4caf50', '#f
 
 export default function createSillyDance(): MicroGame {
 	let s: GameState;
+	let surface: BufferSurface | null = null;
 
 	function laneY(lane: number): number {
 		return LANE_TOP + lane * ARROW_SPACING;
@@ -169,6 +197,23 @@ export default function createSillyDance(): MicroGame {
 		};
 	}
 
+	function triggerMove(dir: Dir) {
+		switch (dir) {
+			case 'left':
+				s.kidTargetX = Math.max(95, s.kidTargetX - 18);
+				break;
+			case 'right':
+				s.kidTargetX = Math.min(185, s.kidTargetX + 18);
+				break;
+			case 'up':
+				if (s.kidJumpY >= 0) s.kidJumpVel = -160;
+				break;
+			case 'down':
+				// squatAmount handled in physics
+				break;
+		}
+	}
+
 	function spawnParticles(x: number, y: number, color: string, count: number) {
 		for (let i = 0; i < count; i++) {
 			const angle = Math.random() * Math.PI * 2;
@@ -184,171 +229,164 @@ export default function createSillyDance(): MicroGame {
 		}
 	}
 
-	function drawKid(ctx: CanvasRenderingContext2D, pose: DancePose, beatPhase: number) {
-		const cx = 140;
-		const cy = 88;
-		const bounce = Math.sin(beatPhase * Math.PI * 2) * 2;
+	function drawKid(ctx: CanvasRenderingContext2D, pose: DancePose, beatPhase: number, elapsed: number) {
+		const cx = Math.round(s.kidX);
+		const bounce = Math.round(Math.sin(beatPhase * Math.PI * 2) * 2);
+		const jumpY = Math.round(s.kidJumpY);
+		const squat = s.squatAmount;
 
+		// Shadow on ground (widens with squat, shrinks when jumping)
+		const shadowW = Math.round(6 + squat * 4 - Math.min(0, jumpY) * 0.15);
+		const shadowAlpha = jumpY < -4 ? 0.06 : 0.12;
+		rect(ctx, cx - Math.floor(shadowW / 2), 108, shadowW, 2, `rgba(0,0,0,${shadowAlpha})`);
+
+		// Squash/stretch adjustments
+		const squatOff = Math.round(squat * 5); // push head down when squatting
+		const bh = Math.max(4, Math.round(6 - squat * 2));
+
+		// Apply spin as horizontal flip effect
 		ctx.save();
-		ctx.translate(cx, cy + bounce);
-
-		// Shadow
-		ctx.fillStyle = 'rgba(0,0,0,0.15)';
-		ctx.beginPath();
-		ctx.ellipse(0, 20 - bounce, 8, 3, 0, 0, Math.PI * 2);
-		ctx.fill();
-
-		// Body
-		const bodyColor = '#ffb74d';
-		const shirtColor = '#e53935';
-		const pantsColor = '#1565c0';
-		const hairColor = '#5d4037';
-
-		let armLAngle = 0;
-		let armRAngle = 0;
-		let legSpread = 0;
-		let headTilt = 0;
-		let bodyTilt = 0;
-
-		switch (pose) {
-			case 'up':
-				armLAngle = -2.5;
-				armRAngle = -2.5;
-				break;
-			case 'down':
-				armLAngle = 0.3;
-				armRAngle = 0.3;
-				legSpread = 4;
-				break;
-			case 'left':
-				armLAngle = -1.8;
-				armRAngle = 0.5;
-				bodyTilt = -0.15;
-				headTilt = -0.1;
-				break;
-			case 'right':
-				armLAngle = 0.5;
-				armRAngle = -1.8;
-				bodyTilt = 0.15;
-				headTilt = 0.1;
-				break;
-			case 'spin':
-				bodyTilt = Math.sin(beatPhase * Math.PI * 4) * 0.3;
-				armLAngle = -1.5;
-				armRAngle = -1.5;
-				break;
-			case 'dab':
-				armLAngle = -2.2;
-				armRAngle = -0.8;
-				headTilt = 0.4;
-				bodyTilt = 0.15;
-				break;
-			default: // idle
-				armLAngle = 0.2 + Math.sin(beatPhase * Math.PI * 2) * 0.15;
-				armRAngle = 0.2 - Math.sin(beatPhase * Math.PI * 2) * 0.15;
-				break;
+		if (s.spinPhase > 0) {
+			const spinScale = Math.cos(s.spinPhase * Math.PI * 2);
+			ctx.translate(cx, 0);
+			ctx.scale(spinScale, 1);
+			ctx.translate(-cx, 0);
 		}
 
-		ctx.rotate(bodyTilt);
+		// Character base position
+		const baseY = 104 + bounce + jumpY + squatOff;
+		const hy = baseY - 22;
+		const fy = drawChildHead(ctx, cx, hy);
+
+		// Eyes
+		const ey = fy + 3;
+		const eyeStyle: EyeStyle = pose !== 'idle'
+			? 'happy'
+			: shouldBlink(elapsed * 1000) ? 'blink' : 'open';
+		drawChildEyes(ctx, cx, ey, eyeStyle, pose === 'idle');
+
+		// Mouth
+		const mouthStyle: MouthStyle = (pose === 'dab' || pose === 'spin')
+			? 'happy'
+			: pose !== 'idle' ? 'open' : 'idle';
+		drawChildMouth(ctx, cx, fy + 6, mouthStyle);
+
+		drawChildNeck(ctx, cx, fy + 9);
+
+		const by = fy + 10;
+		drawChildTorso(ctx, cx, by, bh);
 
 		// Legs
-		ctx.strokeStyle = pantsColor;
-		ctx.lineWidth = 3;
-		ctx.beginPath();
-		ctx.moveTo(-2, 10);
-		ctx.lineTo(-3 - legSpread, 19);
-		ctx.stroke();
-		ctx.beginPath();
-		ctx.moveTo(2, 10);
-		ctx.lineTo(3 + legSpread, 19);
-		ctx.stroke();
+		drawDanceLegs(ctx, cx, by + bh, pose, squat);
 
-		// Shoes
-		ctx.fillStyle = '#212121';
-		rect(ctx, -5 - legSpread, 18, 4, 2, '#212121');
-		rect(ctx, 1 + legSpread, 18, 4, 2, '#212121');
-
-		// Torso (shirt)
-		rect(ctx, -5, 2, 10, 9, shirtColor);
-
-		// Arms
-		ctx.strokeStyle = bodyColor;
-		ctx.lineWidth = 2.5;
-		// Left arm
-		ctx.save();
-		ctx.translate(-5, 3);
-		ctx.rotate(armLAngle);
-		ctx.beginPath();
-		ctx.moveTo(0, 0);
-		ctx.lineTo(0, 9);
-		ctx.stroke();
-		// Hand
-		ctx.fillStyle = bodyColor;
-		ctx.beginPath();
-		ctx.arc(0, 9, 1.5, 0, Math.PI * 2);
-		ctx.fill();
-		ctx.restore();
-
-		// Right arm
-		ctx.save();
-		ctx.translate(5, 3);
-		ctx.rotate(armRAngle);
-		ctx.beginPath();
-		ctx.moveTo(0, 0);
-		ctx.lineTo(0, 9);
-		ctx.stroke();
-		ctx.fillStyle = bodyColor;
-		ctx.beginPath();
-		ctx.arc(0, 9, 1.5, 0, Math.PI * 2);
-		ctx.fill();
-		ctx.restore();
-
-		// Head
-		ctx.save();
-		ctx.rotate(headTilt);
-		// Face
-		ctx.fillStyle = bodyColor;
-		ctx.beginPath();
-		ctx.arc(0, -3, 6, 0, Math.PI * 2);
-		ctx.fill();
-		// Hair
-		ctx.fillStyle = hairColor;
-		ctx.beginPath();
-		ctx.arc(0, -5, 6, Math.PI, Math.PI * 2);
-		ctx.fill();
-		// Eyes (happy when dancing!)
-		if (pose !== 'idle') {
-			// Happy squint eyes
-			ctx.strokeStyle = '#333';
-			ctx.lineWidth = 0.8;
-			ctx.beginPath();
-			ctx.arc(-2.5, -3, 1.2, 0, Math.PI);
-			ctx.stroke();
-			ctx.beginPath();
-			ctx.arc(2.5, -3, 1.2, 0, Math.PI);
-			ctx.stroke();
-		} else {
-			ctx.fillStyle = '#333';
-			ctx.beginPath();
-			ctx.arc(-2.5, -3, 0.8, 0, Math.PI * 2);
-			ctx.fill();
-			ctx.beginPath();
-			ctx.arc(2.5, -3, 0.8, 0, Math.PI * 2);
-			ctx.fill();
-		}
-		// Smile
-		ctx.strokeStyle = '#333';
-		ctx.lineWidth = 0.6;
-		ctx.beginPath();
-		ctx.arc(0, -1, 2.5, 0.2, Math.PI - 0.2);
-		ctx.stroke();
-		ctx.restore();
+		// Arms (on top of torso)
+		drawDanceArms(ctx, cx, by + 1, pose, beatPhase, jumpY);
 
 		ctx.restore();
 	}
 
+	function drawDanceArms(
+		ctx: CanvasRenderingContext2D, cx: number, y: number,
+		pose: DancePose, beatPhase: number, jumpY: number
+	) {
+		const skin = CHILD_PAL.skin;
+		switch (pose) {
+			case 'up':
+				// Both arms raised high — extra high if jumping
+				px(ctx, cx - 6, y - 1, skin); px(ctx, cx - 7, y - 2, skin);
+				px(ctx, cx - 7, y - 3, skin); px(ctx, cx - 8, y - 4, skin);
+				if (jumpY < -3) px(ctx, cx - 8, y - 5, skin);
+				px(ctx, cx + 5, y - 1, skin); px(ctx, cx + 6, y - 2, skin);
+				px(ctx, cx + 6, y - 3, skin); px(ctx, cx + 7, y - 4, skin);
+				if (jumpY < -3) px(ctx, cx + 7, y - 5, skin);
+				break;
+			case 'down':
+				// Arms forward (like bracing for squat)
+				px(ctx, cx - 6, y, skin); px(ctx, cx - 7, y + 1, skin);
+				px(ctx, cx - 8, y + 1, skin);
+				px(ctx, cx + 5, y, skin); px(ctx, cx + 6, y + 1, skin);
+				px(ctx, cx + 7, y + 1, skin);
+				break;
+			case 'left':
+				// Both arms pointing left
+				px(ctx, cx - 6, y - 1, skin); px(ctx, cx - 7, y - 2, skin);
+				px(ctx, cx - 8, y - 2, skin); px(ctx, cx - 9, y - 3, skin);
+				px(ctx, cx + 5, y, skin); px(ctx, cx + 4, y - 1, skin);
+				break;
+			case 'right':
+				// Both arms pointing right
+				px(ctx, cx - 6, y, skin); px(ctx, cx - 5, y - 1, skin);
+				px(ctx, cx + 5, y - 1, skin); px(ctx, cx + 6, y - 2, skin);
+				px(ctx, cx + 7, y - 2, skin); px(ctx, cx + 8, y - 3, skin);
+				break;
+			case 'spin':
+				// Arms spread wide out to sides
+				px(ctx, cx - 6, y - 1, skin); px(ctx, cx - 7, y - 1, skin);
+				px(ctx, cx - 8, y - 2, skin); px(ctx, cx - 9, y - 2, skin);
+				px(ctx, cx - 10, y - 3, skin);
+				px(ctx, cx + 5, y - 1, skin); px(ctx, cx + 6, y - 1, skin);
+				px(ctx, cx + 7, y - 2, skin); px(ctx, cx + 8, y - 2, skin);
+				px(ctx, cx + 9, y - 3, skin);
+				break;
+			case 'dab':
+				// Left arm up diagonal, right arm across face
+				px(ctx, cx - 6, y - 1, skin); px(ctx, cx - 7, y - 2, skin);
+				px(ctx, cx - 7, y - 3, skin); px(ctx, cx - 8, y - 4, skin);
+				px(ctx, cx - 9, y - 5, skin); px(ctx, cx - 10, y - 6, skin);
+				px(ctx, cx + 5, y, skin); px(ctx, cx + 6, y - 1, skin);
+				px(ctx, cx + 7, y - 2, skin); px(ctx, cx + 6, y - 3, skin);
+				break;
+			default: { // idle — gentle sway
+				const wave = Math.floor(beatPhase * 4) % 2;
+				rect(ctx, cx - 6, y, 1, 4 + wave, skin);
+				px(ctx, cx - 6, y + 4 + wave, skin);
+				rect(ctx, cx + 5, y, 1, 4 + (1 - wave), skin);
+				px(ctx, cx + 5, y + 4 + (1 - wave), skin);
+				break;
+			}
+		}
+	}
+
+	function drawDanceLegs(
+		ctx: CanvasRenderingContext2D, cx: number, y: number, pose: DancePose, squat: number
+	) {
+		const { pants, pantsLt, pantsSh, foot } = CHILD_PAL;
+		const spread = Math.round(squat * 3);
+
+		if (pose === 'down' || squat > 0.3) {
+			// Wide squat stance
+			rect(ctx, cx - 4 - spread, y, 3, Math.max(2, 4 - Math.round(squat * 2)), pants);
+			rect(ctx, cx + 1 + spread, y, 3, Math.max(2, 4 - Math.round(squat * 2)), pants);
+			px(ctx, cx - 4 - spread, y, pantsLt); px(ctx, cx + 1 + spread, y, pantsLt);
+			const fh = Math.max(2, 4 - Math.round(squat * 2));
+			rect(ctx, cx - 5 - spread, y + fh, 4, 1, foot);
+			rect(ctx, cx + 1 + spread, y + fh, 4, 1, foot);
+		} else if (pose === 'left') {
+			// Stepping left
+			rect(ctx, cx - 5, y, 3, 5, pants); px(ctx, cx - 5, y, pantsLt);
+			rect(ctx, cx, y + 1, 3, 4, pants); px(ctx, cx, y + 1, pantsLt);
+			rect(ctx, cx - 6, y + 5, 4, 1, foot);
+			rect(ctx, cx, y + 5, 3, 1, foot);
+		} else if (pose === 'right') {
+			// Stepping right
+			rect(ctx, cx - 3, y + 1, 3, 4, pants); px(ctx, cx - 3, y + 1, pantsLt);
+			rect(ctx, cx + 2, y, 3, 5, pants); px(ctx, cx + 2, y, pantsLt);
+			rect(ctx, cx - 3, y + 5, 3, 1, foot);
+			rect(ctx, cx + 2, y + 5, 4, 1, foot);
+		} else {
+			// Normal stance
+			rect(ctx, cx - 3, y, 3, 5, pants);
+			rect(ctx, cx, y, 3, 5, pants);
+			px(ctx, cx - 3, y, pantsLt); px(ctx, cx, y, pantsLt);
+			px(ctx, cx - 2, y + 2, pantsSh); px(ctx, cx + 1, y + 2, pantsSh);
+			rect(ctx, cx - 4, y + 5, 4, 1, foot);
+			rect(ctx, cx, y + 5, 4, 1, foot);
+		}
+	}
+
 	return {
 		async init(ctx: GameContext) {
+			surface = createBufferSurface();
 			const diff = ctx.difficulty;
 			const scrollSpeed = SCROLL_SPEED_BASE * (0.8 + diff * 0.3);
 			const bpm = BPM_BASE + (diff - 1) * 15;
@@ -364,12 +402,18 @@ export default function createSillyDance(): MicroGame {
 				poseTimer: 0,
 				beatTimer: 0,
 				beatPhase: 0,
-				nextArrowTimer: 0.5, // small delay before first arrow
+				nextArrowTimer: 0.5,
 				scrollSpeed,
 				bpm,
 				particles: [],
 				danceFloorHue: 0,
-				lastBeatBass: false
+				lastBeatBass: false,
+				kidX: 140,
+				kidTargetX: 140,
+				kidJumpY: 0,
+				kidJumpVel: 0,
+				spinPhase: 0,
+				squatAmount: 0
 			};
 		},
 
@@ -469,6 +513,7 @@ export default function createSillyDance(): MicroGame {
 						s.score += 2;
 						s.pose = dir;
 						s.poseTimer = 0.35;
+						triggerMove(dir);
 						spawnParticles(HIT_X, laneY(best.lane) + ARROW_SIZE / 2, ARROW_COLORS[dir], 6);
 						ctx.playSound('hit');
 						if (s.combo > 0 && s.combo % 5 === 0) {
@@ -482,6 +527,7 @@ export default function createSillyDance(): MicroGame {
 						s.score += 1;
 						s.pose = dir;
 						s.poseTimer = 0.3;
+						triggerMove(dir);
 						spawnParticles(HIT_X, laneY(best.lane) + ARROW_SIZE / 2, ARROW_COLORS[dir], 3);
 						ctx.playSound('hit');
 					}
@@ -513,6 +559,7 @@ export default function createSillyDance(): MicroGame {
 						s.score += distTime <= PERFECT_WINDOW ? 2 : 1;
 						s.pose = best.dir;
 						s.poseTimer = 0.3;
+						triggerMove(best.dir);
 						spawnParticles(
 							HIT_X,
 							laneY(best.lane) + ARROW_SIZE / 2,
@@ -536,10 +583,36 @@ export default function createSillyDance(): MicroGame {
 			if (s.combo >= 10 && s.poseTimer > 0) {
 				s.pose = 'dab';
 			} else if (s.combo >= 5 && s.poseTimer > 0) {
+				if (s.spinPhase === 0) s.spinPhase = 0.01;
 				s.pose = 'spin';
 			}
 
 			s.maxCombo = Math.max(s.maxCombo, s.combo);
+
+			// ── Kid movement physics ──
+			s.kidX += (s.kidTargetX - s.kidX) * Math.min(1, 10 * dt);
+
+			// Jump
+			if (s.kidJumpY < 0 || s.kidJumpVel < 0) {
+				s.kidJumpVel += 500 * dt;
+				s.kidJumpY += s.kidJumpVel * dt;
+				if (s.kidJumpY >= 0) { s.kidJumpY = 0; s.kidJumpVel = 0; }
+			}
+
+			// Spin
+			if (s.spinPhase > 0) {
+				s.spinPhase = Math.min(1, s.spinPhase + dt * 3.5);
+				if (s.spinPhase >= 1) s.spinPhase = 0;
+			}
+
+			// Squat
+			const squatTarget = s.pose === 'down' ? 1 : 0;
+			s.squatAmount += (squatTarget - s.squatAmount) * Math.min(1, 14 * dt);
+
+			// Drift back toward center when idle
+			if (s.pose === 'idle') {
+				s.kidTargetX += (140 - s.kidTargetX) * 0.8 * dt;
+			}
 
 			// Update particles
 			for (const p of s.particles) {
@@ -562,10 +635,11 @@ export default function createSillyDance(): MicroGame {
 		},
 
 		render(ctx: GameContext) {
-			const c = ctx.ctx;
+			if (!surface) return;
+			const c = surface.ctx;
+			c.clearRect(0, 0, W, H);
 
 			// ── Background: dance floor ──
-			// Dark background
 			rect(c, 0, 0, W, H, '#1a1a2e');
 
 			// Dance floor tiles (bottom half)
@@ -575,7 +649,6 @@ export default function createSillyDance(): MicroGame {
 				for (let ty = floorY; ty < H; ty += tileSize) {
 					const ci = ((tx / tileSize + ty / tileSize) | 0) % 2;
 					const hue = (s.danceFloorHue + tx * 2 + ty * 3) % 360;
-					// Pulsing brightness on beat
 					const beatPulse = Math.pow(1 - s.beatPhase, 3) * 30;
 					const lightness = ci === 0 ? 25 + beatPulse : 15 + beatPulse * 0.5;
 					c.fillStyle = `hsl(${hue}, 70%, ${lightness}%)`;
@@ -600,30 +673,24 @@ export default function createSillyDance(): MicroGame {
 			c.globalAlpha = 1;
 
 			// ── Arrow lanes (left panel) ──
-			// Lane background
 			rect(c, 0, LANE_TOP - 4, 65, ARROW_SPACING * 4 + 8, 'rgba(0,0,0,0.5)');
 
-			// Hit zone marker
 			for (let lane = 0; lane < 4; lane++) {
 				const y = laneY(lane);
-				// Ghost arrow outline at hit position
 				c.globalAlpha = 0.25 + beatIntensity * 0.15;
-				const ghostColor = ARROW_COLORS[DIRS[lane]];
-				c.strokeStyle = ghostColor;
+				c.strokeStyle = ARROW_COLORS[DIRS[lane]];
 				c.lineWidth = 0.5;
 				c.strokeRect(HIT_X - 1, y - 1, ARROW_SIZE + 2, ARROW_SIZE + 2);
 				c.globalAlpha = 1;
 			}
 
-			// ── Render arrows ──
+			// ── Arrows ──
 			for (const a of s.arrows) {
 				if (a.x < -ARROW_SIZE || a.x > W + ARROW_SIZE) continue;
-
 				const y = laneY(a.lane);
 				const pal: Record<string, string> = { '1': a.hit ? '#fff' : ARROW_COLORS[a.dir] };
 
 				if (a.hit && a.feedbackTimer > 0) {
-					// Flash white on hit
 					pal['1'] = ARROW_HIT_COLORS[a.dir];
 					c.globalAlpha = a.feedbackTimer / 0.3;
 					drawSprite(c, Math.round(a.x), y, ARROW_SPRITES[a.dir], pal);
@@ -638,8 +705,8 @@ export default function createSillyDance(): MicroGame {
 				}
 			}
 
-			// ── Draw kid ──
-			drawKid(c, s.pose, s.beatPhase);
+			// ── Kid ──
+			drawKid(c, s.pose, s.beatPhase, s.beatTimer);
 
 			// ── Particles ──
 			for (const p of s.particles) {
@@ -649,26 +716,21 @@ export default function createSillyDance(): MicroGame {
 			c.globalAlpha = 1;
 
 			// ── HUD ──
-			// Combo display
 			if (s.combo >= 3) {
-				const comboText = `${s.combo}`;
 				c.fillStyle = s.combo >= 10 ? '#ffeb3b' : s.combo >= 5 ? '#ff9800' : '#fff';
 				c.font = `bold ${s.combo >= 10 ? 12 : 10}px monospace`;
 				c.textAlign = 'center';
 				c.textBaseline = 'middle';
-				const comboY = 12;
-				c.fillText(`${comboText}x COMBO`, W / 2 + 40, comboY);
+				c.fillText(`${s.combo}x COMBO`, W / 2 + 40, 12);
 			}
 
-			// Score
 			c.fillStyle = '#fff';
 			c.font = 'bold 8px monospace';
 			c.textAlign = 'right';
 			c.textBaseline = 'top';
 			c.fillText(`${s.score}`, W - 4, 8);
 
-			// Direction labels on lanes
-			const labels = ['\u25B2', '\u25BC', '\u25C0', '\u25B6']; // ▲ ▼ ◀ ▶
+			const labels = ['\u25B2', '\u25BC', '\u25C0', '\u25B6'];
 			c.font = '7px monospace';
 			c.textAlign = 'center';
 			c.textBaseline = 'middle';
@@ -676,10 +738,32 @@ export default function createSillyDance(): MicroGame {
 				c.fillStyle = ARROW_COLORS[DIRS[i]];
 				c.fillText(labels[i], 8, laneY(i) + ARROW_SIZE / 2);
 			}
+
+			// ── Blit buffer → screen ──
+			const screen = ctx.ctx;
+			screen.save();
+			screen.fillStyle = '#1a1a2e';
+			screen.fillRect(0, 0, ctx.width, ctx.height);
+
+			const scale = Math.min(ctx.width / W, ctx.height / H);
+			const dw = W * scale;
+			const dh = H * scale;
+			const dx = (ctx.width - dw) / 2;
+			const dy = (ctx.height - dh) / 2;
+
+			screen.fillStyle = '#090b11';
+			screen.fillRect(dx - 8, dy - 8, dw + 16, dh + 16);
+			screen.strokeStyle = '#2e3247';
+			screen.lineWidth = 4;
+			screen.strokeRect(dx - 8, dy - 8, dw + 16, dh + 16);
+
+			screen.imageSmoothingEnabled = false;
+			screen.drawImage(surface.canvas, dx, dy, dw, dh);
+			screen.restore();
 		},
 
 		destroy() {
-			// nothing to clean up
+			surface = null;
 		}
 	};
 }

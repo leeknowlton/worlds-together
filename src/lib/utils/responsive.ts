@@ -1,13 +1,13 @@
-const DEFAULT_LOGICAL_WIDTH = 400;
-const DEFAULT_LOGICAL_HEIGHT = 480;
+export const LOGICAL_WIDTH = 400;
+export const LOGICAL_HEIGHT = 480;
 
 export const METADATA_AREA_HEIGHT = 80;
-export const GAME_AREA_HEIGHT = DEFAULT_LOGICAL_HEIGHT - METADATA_AREA_HEIGHT;
+export const GAME_AREA_HEIGHT = LOGICAL_HEIGHT - METADATA_AREA_HEIGHT;
 
 export function setupCanvas(
 	canvas: HTMLCanvasElement,
-	logicalWidth = DEFAULT_LOGICAL_WIDTH,
-	logicalHeight = DEFAULT_LOGICAL_HEIGHT
+	logicalWidth = LOGICAL_WIDTH,
+	logicalHeight = LOGICAL_HEIGHT
 ) {
 	const ctx = canvas.getContext('2d')!;
 
@@ -15,6 +15,8 @@ export function setupCanvas(
 		const dpr = window.devicePixelRatio || 1;
 		canvas.width = logicalWidth * dpr;
 		canvas.height = logicalHeight * dpr;
+		canvas.style.width = logicalWidth + 'px';
+		canvas.style.height = logicalHeight + 'px';
 		ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 	}
 
