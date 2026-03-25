@@ -1,0 +1,15 @@
+{
+	"id": "microwave-cook",
+	"title": "Microwave Cook!",
+	"prompt": "Set the right time!",
+	"date": "2026-03-18",
+	"occasion": "Kitchen Fun",
+	"description": "Pick the right microwave time for each food. Too little and it's cold, too much and it's ruined!",
+	"duration": 6,
+	"difficulty_scaling": {
+		"1": { "duration": 8 },
+		"2": { "duration": 6 },
+		"3": { "duration": 4.5 }
+	},
+	"tags": ["kitchen", "timing", "food", "pixel-art"]
+}
