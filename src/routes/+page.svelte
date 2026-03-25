@@ -12,6 +12,8 @@
 	import swingRhythmManifest from '$lib/games/swing-rhythm/manifest.json';
 	import createMicrowaveCook from '$lib/games/microwave-cook/game.js';
 	import microwaveManifest from '$lib/games/microwave-cook/manifest.json';
+	import createSillyDance from '$lib/games/silly-dance/game.js';
+	import sillyDanceManifest from '$lib/games/silly-dance/manifest.json';
 
 	interface GameEntry {
 		create: () => MicroGame;
@@ -22,7 +24,8 @@
 		{ create: createFirstSteps, manifest: firstStepsManifest as GameManifest },
 		{ create: createBirthdayJump, manifest: birthdayJumpManifest as GameManifest },
 		{ create: createSwingRhythm, manifest: swingRhythmManifest as GameManifest },
-		{ create: createMicrowaveCook, manifest: microwaveManifest as GameManifest }
+		{ create: createMicrowaveCook, manifest: microwaveManifest as GameManifest },
+		{ create: createSillyDance, manifest: sillyDanceManifest as GameManifest }
 	];
 
 	type AppState = 'idle' | 'selecting' | 'loading' | 'playing';
